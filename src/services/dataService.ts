@@ -1,23 +1,17 @@
 import { getSupabaseClient, getStoredSupabaseConfig } from '../lib/supabase'
-import { Profile, TaskTemplate, BalanceLog } from '../types'
+import { Profile, TaskTemplate, BalanceLog, ActiveGameSession } from '../types'
 
-const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v1'
-const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v1'
-const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v1'
+const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v2'
+const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v2'
+const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v2'
+const LOCAL_STORAGE_KEY_SESSION = 'gametime_local_session_v2'
 
-// Initial seed data for local storage mode
+// Initial seed data: Only Gael
 const INITIAL_PROFILES: Profile[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
-    name: 'Lucas (Filho)',
+    name: 'Gael',
     current_balance_minutes: 45,
-    daily_max_minutes: 90,
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: '22222222-2222-2222-2222-222222222222',
-    name: 'Sofia (Filha)',
-    current_balance_minutes: 30,
     daily_max_minutes: 90,
     updated_at: new Date().toISOString()
   }
@@ -43,8 +37,8 @@ const INITIAL_TEMPLATES: TaskTemplate[] = [
   // Alertas / Penalidades
   { id: 't12', title: 'Desobediência / Birra', minutes_reward: -15, icon: 'AlertTriangle', category: 'penalidade', active: true },
   { id: 't13', title: 'Enrolar / Reclamar', minutes_reward: -10, icon: 'ClockAlert', category: 'penalidade', active: true },
-  { id: 't14', title: 'Briga com Irmão(ã)', minutes_reward: -20, icon: 'Flame', category: 'penalidade', active: true },
-  { id: 't15', title: 'Não Desligar na Hora', minutes_reward: -30, icon: 'Skull', category: 'penalidade', active: true },
+  { id: 't14', title: 'Não Desligar na Hora', minutes_reward: -30, icon: 'Skull', category: 'penalidade', active: true },
+  { id: 't15', title: 'Falar Mal / Gritar', minutes_reward: -15, icon: 'Flame', category: 'penalidade', active: true },
 
   // Resgate / Jogo
   { id: 't16', title: '🎮 Sessão Rápida (-15m)', minutes_reward: -15, icon: 'Zap', category: 'resgate', active: true },
@@ -58,32 +52,24 @@ const INITIAL_LOGS: BalanceLog[] = [
     profile_id: '11111111-1111-1111-1111-111111111111',
     task_title: 'Arrumar a Cama',
     minutes_applied: 10,
-    recorded_by: 'Mãe',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
+    recorded_by: 'Mamãe',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
   },
   {
     id: 'l2',
     profile_id: '11111111-1111-1111-1111-111111111111',
     task_title: 'Dever de Casa / Leitura',
     minutes_applied: 15,
-    recorded_by: 'Pai',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+    recorded_by: 'Papai',
+    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString()
   },
   {
     id: 'l3',
     profile_id: '11111111-1111-1111-1111-111111111111',
     task_title: 'Guardar Brinquedos',
     minutes_applied: 10,
-    recorded_by: 'Mãe',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-  },
-  {
-    id: 'l4',
-    profile_id: '11111111-1111-1111-1111-111111111111',
-    task_title: 'Banho sem enrolar',
-    minutes_applied: 10,
-    recorded_by: 'Pai',
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString()
+    recorded_by: 'Mamãe',
+    created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString()
   }
 ]
 
@@ -107,7 +93,6 @@ const setLocalData = <T>(key: string, data: T): void => {
 }
 
 export const dataService = {
-  // Check if active provider is Supabase or Local
   isSupabaseActive(): boolean {
     const supabase = getSupabaseClient()
     return Boolean(supabase)
@@ -132,7 +117,7 @@ export const dataService = {
           return data as Profile[]
         }
       } catch (err) {
-        console.warn('Supabase getProfiles failed, falling back to local:', err)
+        console.warn('Supabase getProfiles failed, using local:', err)
       }
     }
 
@@ -143,7 +128,6 @@ export const dataService = {
     const supabase = getSupabaseClient()
     if (supabase) {
       try {
-        // Fetch current profile to calculate new balance
         const { data: current, error: fetchErr } = await supabase
           .from('profiles')
           .select('*')
@@ -151,7 +135,6 @@ export const dataService = {
           .single()
 
         if (!fetchErr && current) {
-          // Prevent negative balance: minimum 0 minutes
           const newBalance = Math.max(0, (current.current_balance_minutes || 0) + deltaMinutes)
           
           const { data: updated, error: updateErr } = await supabase
@@ -173,7 +156,6 @@ export const dataService = {
       }
     }
 
-    // Local Storage Fallback
     const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
     let updatedProfile: Profile | null = null
 
@@ -210,38 +192,6 @@ export const dataService = {
     const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
     const updated = profiles.map(p => p.id === profileId ? { ...p, daily_max_minutes: dailyMaxMinutes } : p)
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
-  },
-
-  async createProfile(name: string, dailyMax = 90): Promise<Profile> {
-    const newProfile: Profile = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `profile-${Date.now()}`,
-      name,
-      current_balance_minutes: 0,
-      daily_max_minutes: dailyMax,
-      updated_at: new Date().toISOString()
-    }
-
-    const supabase = getSupabaseClient()
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select()
-          .single()
-
-        if (!error && data) {
-          return data as Profile
-        }
-      } catch (err) {
-        console.warn('Supabase createProfile failed, saving local:', err)
-      }
-    }
-
-    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
-    profiles.push(newProfile)
-    setLocalData(LOCAL_STORAGE_KEY_PROFILES, profiles)
-    return newProfile
   },
 
   // 2. TASK TEMPLATES
@@ -295,21 +245,6 @@ export const dataService = {
     return newTemplate
   },
 
-  async deleteTaskTemplate(id: string): Promise<void> {
-    const supabase = getSupabaseClient()
-    if (supabase) {
-      try {
-        await supabase.from('task_templates').delete().eq('id', id)
-      } catch (err) {
-        console.warn('Supabase deleteTaskTemplate failed:', err)
-      }
-    }
-
-    const templates = getLocalData<TaskTemplate[]>(LOCAL_STORAGE_KEY_TEMPLATES, INITIAL_TEMPLATES)
-    const filtered = templates.filter(t => t.id !== id)
-    setLocalData(LOCAL_STORAGE_KEY_TEMPLATES, filtered)
-  },
-
   // 3. BALANCE LOGS
   async getBalanceLogs(profileId?: string, limit = 50): Promise<BalanceLog[]> {
     const supabase = getSupabaseClient()
@@ -348,7 +283,6 @@ export const dataService = {
       created_at: new Date().toISOString()
     }
 
-    // Simultaneously update profile balance and insert log
     await this.updateProfileBalance(newLog.profile_id, newLog.minutes_applied)
 
     const supabase = getSupabaseClient()
@@ -374,13 +308,11 @@ export const dataService = {
     return newLog
   },
 
-  // Undo a recent transaction (e.g. if parent misclicked)
   async undoBalanceLog(logId: string): Promise<void> {
     const logs = await this.getBalanceLogs()
     const target = logs.find(l => l.id === logId)
     if (!target) return
 
-    // Reverse the balance impact: invert minutes_applied
     await this.updateProfileBalance(target.profile_id, -target.minutes_applied)
 
     const supabase = getSupabaseClient()
@@ -397,23 +329,145 @@ export const dataService = {
     setLocalData(LOCAL_STORAGE_KEY_LOGS, filtered)
   },
 
-  // Setup Supabase Realtime Subscription if configured
+  // 4. ACTIVE GAME SESSION SYNC (Papai e Mamãe veem o mesmo cronômetro em tempo real)
+  async getActiveSession(profileId: string): Promise<ActiveGameSession | null> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('active_sessions')
+          .select('*')
+          .eq('profile_id', profileId)
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (!error && data) {
+          const now = Date.now()
+          const remainingSecs = Math.max(0, Math.floor((data.end_time - now) / 1000))
+          return {
+            id: data.id,
+            profileId: data.profile_id,
+            profileName: data.profile_name,
+            startTime: Number(data.start_time),
+            endTime: Number(data.end_time),
+            totalMinutes: data.total_minutes,
+            remainingSeconds: remainingSecs,
+            isActive: data.is_active
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase getActiveSession failed:', err)
+      }
+    }
+
+    const localSession = getLocalData<ActiveGameSession | null>(LOCAL_STORAGE_KEY_SESSION, null)
+    if (localSession && localSession.isActive && localSession.profileId === profileId) {
+      const remainingSecs = Math.max(0, Math.floor((localSession.endTime - Date.now()) / 1000))
+      return { ...localSession, remainingSeconds: remainingSecs }
+    }
+    return null
+  },
+
+  async startActiveSession(sessionData: Omit<ActiveGameSession, 'id'>): Promise<ActiveGameSession> {
+    const newSession: ActiveGameSession = {
+      ...sessionData,
+      id: crypto.randomUUID ? crypto.randomUUID() : `session-${Date.now()}`
+    }
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        // Deactivate old sessions first
+        await supabase
+          .from('active_sessions')
+          .update({ is_active: false })
+          .eq('profile_id', newSession.profileId)
+
+        // Insert new active session
+        await supabase
+          .from('active_sessions')
+          .insert({
+            id: newSession.id,
+            profile_id: newSession.profileId,
+            profile_name: newSession.profileName,
+            start_time: newSession.startTime,
+            end_time: newSession.endTime,
+            total_minutes: newSession.totalMinutes,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+      } catch (err) {
+        console.warn('Supabase startActiveSession failed:', err)
+      }
+    }
+
+    setLocalData(LOCAL_STORAGE_KEY_SESSION, newSession)
+    return newSession
+  },
+
+  async stopActiveSession(profileId: string): Promise<void> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('active_sessions')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('profile_id', profileId)
+      } catch (err) {
+        console.warn('Supabase stopActiveSession failed:', err)
+      }
+    }
+
+    localStorage.removeItem(LOCAL_STORAGE_KEY_SESSION)
+  },
+
+  async addToleranceToSession(profileId: string, additionalMinutes: number): Promise<void> {
+    const current = await this.getActiveSession(profileId)
+    if (!current) return
+
+    const newEndTime = current.endTime + additionalMinutes * 60 * 1000
+    const newTotal = current.totalMinutes + additionalMinutes
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('active_sessions')
+          .update({
+            end_time: newEndTime,
+            total_minutes: newTotal,
+            updated_at: new Date().toISOString()
+          })
+          .eq('profile_id', profileId)
+          .eq('is_active', true)
+      } catch (err) {
+        console.warn('Supabase addToleranceToSession failed:', err)
+      }
+    }
+
+    const updated = {
+      ...current,
+      endTime: newEndTime,
+      totalMinutes: newTotal,
+      remainingSeconds: Math.max(0, Math.floor((newEndTime - Date.now()) / 1000))
+    }
+    setLocalData(LOCAL_STORAGE_KEY_SESSION, updated)
+  },
+
+  // Setup Realtime Subscription
   subscribeToChanges(onUpdate: () => void): () => void {
     const supabase = getSupabaseClient()
     if (!supabase) return () => {}
 
     try {
       const channel = supabase
-        .channel('gametime_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          onUpdate()
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'balance_logs' }, () => {
-          onUpdate()
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_templates' }, () => {
-          onUpdate()
-        })
+        .channel('gametime_realtime_v2')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'balance_logs' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_templates' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, () => onUpdate())
         .subscribe()
 
       return () => {
@@ -425,10 +479,10 @@ export const dataService = {
     }
   },
 
-  // Reset to demo initial data
   resetDemoData(): void {
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
     setLocalData(LOCAL_STORAGE_KEY_TEMPLATES, INITIAL_TEMPLATES)
     setLocalData(LOCAL_STORAGE_KEY_LOGS, INITIAL_LOGS)
+    localStorage.removeItem(LOCAL_STORAGE_KEY_SESSION)
   }
 }

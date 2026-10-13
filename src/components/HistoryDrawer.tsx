@@ -101,12 +101,12 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
-                            log.recorded_by === 'Pai'
+                            log.recorded_by === 'Papai'
                               ? 'bg-blue-950 text-blue-300 border border-blue-800/40'
                               : 'bg-pink-950 text-pink-300 border border-pink-800/40'
                           }`}
                         >
-                          {log.recorded_by === 'Pai' ? '🧔 Pai' : '👩 Mãe'}
+                          {log.recorded_by === 'Papai' ? '🧔 Papai' : '👩 Mamãe'}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
                           {formatDate(log.created_at)} {formatTime(log.created_at)}

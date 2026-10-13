@@ -7,17 +7,18 @@ import { QuickMissionsGrid } from './components/QuickMissionsGrid'
 import { HistoryDrawer } from './components/HistoryDrawer'
 import { CustomMinutesModal } from './components/CustomMinutesModal'
 import { SupabaseModal } from './components/SupabaseModal'
-import { AddProfileModal } from './components/AddProfileModal'
+import { ShareModal } from './components/ShareModal'
+import { AlarmModal } from './components/AlarmModal'
 import { ToastContainer, ToastMessage } from './components/Toast'
 import { dataService } from './services/dataService'
 import { sounds } from './lib/sound'
 import { Profile, TaskTemplate, BalanceLog, ParentAuthor, ActiveGameSession, TaskCategory } from './types'
-import { History, ShieldAlert, Sparkles, Gamepad2, Award } from 'lucide-react'
+import { History, Share2, Gamepad2, BellRing } from 'lucide-react'
 
 export function App() {
-  // Author state
+  // Author state: defaults to Papai
   const [currentAuthor, setCurrentAuthor] = useState<ParentAuthor>(() => {
-    return (localStorage.getItem('gametime_author') as ParentAuthor) || 'Pai'
+    return (localStorage.getItem('gametime_author') as ParentAuthor) || 'Papai'
   })
 
   // Sound state
@@ -37,9 +38,10 @@ export function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
   const [isCustomAdjustOpen, setIsCustomAdjustOpen] = useState<boolean>(false)
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false)
-  const [isAddProfileOpen, setIsAddProfileOpen] = useState<boolean>(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false)
+  const [isAlarmModalOpen, setIsAlarmModalOpen] = useState<boolean>(false)
 
-  // Active Game Session Timer
+  // Active Game Session Timer (Real-time synchronized)
   const [activeSession, setActiveSession] = useState<ActiveGameSession | null>(null)
 
   // Toasts
@@ -69,16 +71,18 @@ export function App() {
       ])
 
       setProfiles(profilesData)
-      const selected = activeProfile 
-        ? profilesData.find(p => p.id === activeProfile.id) || profilesData[0] 
-        : profilesData[0]
-      setActiveProfile(selected || null)
-
+      // Dedicated to Gael
+      const gaelProfile = profilesData.find(p => p.name === 'Gael') || profilesData[0]
+      setActiveProfile(gaelProfile || null)
       setTaskTemplates(templatesData)
 
-      if (selected) {
-        const logsData = await dataService.getBalanceLogs(selected.id)
+      if (gaelProfile) {
+        const [logsData, sessionData] = await Promise.all([
+          dataService.getBalanceLogs(gaelProfile.id),
+          dataService.getActiveSession(gaelProfile.id)
+        ])
         setLogs(logsData)
+        setActiveSession(sessionData)
       }
     } catch (err) {
       console.error('Error loading data:', err)
@@ -86,7 +90,7 @@ export function App() {
     } finally {
       setLoading(false)
     }
-  }, [activeProfile?.id])
+  }, [])
 
   // Initial load & realtime subscribe
   useEffect(() => {
@@ -99,12 +103,10 @@ export function App() {
     }
   }, [loadData])
 
-  // Switch profile
-  const handleSelectProfile = async (profile: Profile) => {
-    setActiveProfile(profile)
-    const logsData = await dataService.getBalanceLogs(profile.id)
-    setLogs(logsData)
-  }
+  // Request browser notification permission on first user click
+  useEffect(() => {
+    sounds.requestNotificationPermission()
+  }, [])
 
   // Author change
   const handleSelectAuthor = (author: ParentAuthor) => {
@@ -150,14 +152,9 @@ export function App() {
     }
 
     try {
-      // Optimistic profile update
       const newBalance = Math.max(0, activeProfile.current_balance_minutes + task.minutes_reward)
       setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
-      setProfiles((prev) =>
-        prev.map((p) => p.id === activeProfile.id ? { ...p, current_balance_minutes: newBalance } : p)
-      )
 
-      // Add to balance_logs in database/service
       const newLog = await dataService.addBalanceLog({
         profile_id: activeProfile.id,
         task_title: task.title,
@@ -169,7 +166,7 @@ export function App() {
 
       addToast(
         isReward ? `+${task.minutes_reward}m por "${task.title}"!` : `${task.minutes_reward}m penalidade aplicada`,
-        `Registrado por ${currentAuthor} para ${activeProfile.name}`,
+        `Registrado por ${currentAuthor} para o Gael`,
         isReward ? 'success' : 'penalty'
       )
     } catch (err) {
@@ -193,9 +190,6 @@ export function App() {
     try {
       const newBalance = Math.max(0, activeProfile.current_balance_minutes + deductMinutes)
       setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
-      setProfiles((prev) =>
-        prev.map((p) => p.id === activeProfile.id ? { ...p, current_balance_minutes: newBalance } : p)
-      )
 
       const newLog = await dataService.addBalanceLog({
         profile_id: activeProfile.id,
@@ -208,7 +202,7 @@ export function App() {
 
       addToast(
         `🎮 Jogo liberado! -${minutes} min debitados`,
-        `Registrado por ${currentAuthor}. Bom jogo, ${activeProfile.name}!`,
+        `Registrado por ${currentAuthor}. Bom jogo, Gael!`,
         'success'
       )
     } catch (err) {
@@ -218,37 +212,57 @@ export function App() {
     }
   }
 
-  // Start active game session timer
-  const handleStartSessionTimer = (minutes: number) => {
+  // Start active game session timer (Synchronizes in Realtime with Spouse!)
+  const handleStartSessionTimer = async (minutes: number) => {
     if (!activeProfile) return
-    setActiveSession({
-      id: `session-${Date.now()}`,
-      profileId: activeProfile.id,
-      profileName: activeProfile.name,
-      startTime: Date.now(),
-      totalMinutes: minutes,
-      remainingSeconds: minutes * 60,
-      isActive: true
-    })
+
+    const now = Date.now()
+    const endTime = now + minutes * 60 * 1000
+
+    try {
+      const session = await dataService.startActiveSession({
+        profileId: activeProfile.id,
+        profileName: activeProfile.name,
+        startTime: now,
+        endTime,
+        totalMinutes: minutes,
+        remainingSeconds: minutes * 60,
+        isActive: true
+      })
+
+      setActiveSession(session)
+      setIsAlarmModalOpen(false)
+      sounds.stopAlarm()
+      addToast(`Cronômetro de ${minutes}m iniciado!`, 'Alarme tocará quando o tempo do Gael acabar.', 'info')
+    } catch (e) {
+      console.error('Failed to start session timer:', e)
+    }
   }
 
-  const handleStopSessionTimer = () => {
+  const handleStopSessionTimer = async () => {
+    sounds.stopAlarm()
+    setIsAlarmModalOpen(false)
+    if (activeProfile) {
+      await dataService.stopActiveSession(activeProfile.id)
+    }
     setActiveSession(null)
-    addToast('Sessão de jogo finalizada', undefined, 'info')
+    addToast('Sessão de jogo do Gael finalizada', undefined, 'info')
   }
 
-  const handleAddMinutesToSession = (addedMins: number) => {
-    if (!activeSession) return
-    setActiveSession((prev) =>
-      prev
-        ? {
-            ...prev,
-            remainingSeconds: prev.remainingSeconds + addedMins * 60,
-            totalMinutes: prev.totalMinutes + addedMins
-          }
-        : null
-    )
-    addToast(`+${addedMins} min de tolerância adicionados`, undefined, 'info')
+  const handleAddMinutesToSession = async (addedMins: number) => {
+    if (!activeProfile || !activeSession) return
+    sounds.stopAlarm()
+    setIsAlarmModalOpen(false)
+
+    await dataService.addToleranceToSession(activeProfile.id, addedMins)
+    const updated = await dataService.getActiveSession(activeProfile.id)
+    setActiveSession(updated)
+    addToast(`+${addedMins} min de tolerância adicionados`, 'Gael pode salvar a partida!', 'info')
+  }
+
+  // Time is up trigger
+  const handleTimeUp = () => {
+    setIsAlarmModalOpen(true)
   }
 
   // Custom manual adjust
@@ -268,9 +282,6 @@ export function App() {
     try {
       const newBalance = Math.max(0, activeProfile.current_balance_minutes + minutes)
       setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
-      setProfiles((prev) =>
-        prev.map((p) => p.id === activeProfile.id ? { ...p, current_balance_minutes: newBalance } : p)
-      )
 
       const newLog = await dataService.addBalanceLog({
         profile_id: activeProfile.id,
@@ -324,36 +335,20 @@ export function App() {
     }
   }
 
-  // Add child profile
-  const handleAddProfile = async (name: string, dailyMax: number) => {
-    try {
-      const created = await dataService.createProfile(name, dailyMax)
-      setProfiles((prev) => [...prev, created])
-      setActiveProfile(created)
-      addToast(`Perfil de ${created.name} criado!`, undefined, 'success')
-      if (soundEnabled) sounds.playReward()
-    } catch (err) {
-      console.error('Add profile failed:', err)
-      addToast('Erro ao criar perfil', undefined, 'penalty')
-    }
-  }
-
   return (
     <div className="min-h-screen bg-background text-slate-100 flex flex-col antialiased selection:bg-purple-600 selection:text-white pb-20">
       {/* Toast Notification Container */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Header with Author and Child Selector */}
+      {/* Header with Papai/Mamãe selector and Share button */}
       <Header
         currentAuthor={currentAuthor}
         onSelectAuthor={handleSelectAuthor}
-        profiles={profiles}
         activeProfile={activeProfile}
-        onSelectProfile={handleSelectProfile}
-        onAddProfile={() => setIsAddProfileOpen(true)}
         soundEnabled={soundEnabled}
         onToggleSound={handleToggleSound}
         onOpenSettings={() => setIsSupabaseModalOpen(true)}
+        onOpenShare={() => setIsShareModalOpen(true)}
         supabaseConnected={supabaseConnected}
       />
 
@@ -362,16 +357,17 @@ export function App() {
         {loading && !activeProfile ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-3">
             <Gamepad2 className="w-10 h-10 text-gamer-purple animate-bounce" />
-            <p className="font-gamer text-sm tracking-wider">CARREGANDO GAMETIME...</p>
+            <p className="font-gamer text-sm tracking-wider">CARREGANDO GAMETIME DO GAEL...</p>
           </div>
         ) : activeProfile ? (
           <>
-            {/* Active Game Session Countdown Card (if running) */}
+            {/* Active Game Session Countdown Card (with loud alarm support) */}
             {activeSession && (
               <ActiveTimerCard
                 session={activeSession}
                 onStop={handleStopSessionTimer}
                 onAddMinutes={handleAddMinutesToSession}
+                onTimeUp={handleTimeUp}
               />
             )}
 
@@ -398,7 +394,7 @@ export function App() {
               >
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-gamer-purple-light" />
-                  <span>Ver Histórico & Auditoria</span>
+                  <span>Ver Histórico de Lançamentos</span>
                   <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">
                     {logs.length} registros
                   </span>
@@ -407,17 +403,7 @@ export function App() {
               </button>
             </div>
           </>
-        ) : (
-          <div className="text-center py-16 space-y-3">
-            <p className="text-slate-400">Nenhum perfil cadastrado.</p>
-            <button
-              onClick={() => setIsAddProfileOpen(true)}
-              className="px-4 py-2 rounded-xl bg-gamer-purple text-white font-bold text-xs"
-            >
-              Criar Perfil
-            </button>
-          </div>
-        )}
+        ) : null}
       </main>
 
       {/* Floating Bottom Quick Bar on Mobile */}
@@ -428,22 +414,33 @@ export function App() {
               <span className="text-slate-400 font-medium">Registrando como:</span>
               <span
                 className={`font-bold px-2 py-0.5 rounded-lg text-xs ${
-                  currentAuthor === 'Pai'
+                  currentAuthor === 'Papai'
                     ? 'bg-blue-950 text-blue-300 border border-blue-800/40'
                     : 'bg-pink-950 text-pink-300 border border-pink-800/40'
                 }`}
               >
-                {currentAuthor === 'Pai' ? '🧔 Pai' : '👩 Mãe'}
+                {currentAuthor === 'Papai' ? '🧔 Papai' : '👩 Mamãe'}
               </span>
             </div>
 
-            <button
-              onClick={() => setIsHistoryOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors"
-            >
-              <History className="w-3.5 h-3.5 text-gamer-cyan" />
-              <span>Histórico</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="px-2.5 py-1.5 rounded-xl bg-pink-950/70 hover:bg-pink-900/70 text-pink-300 text-xs font-bold border border-pink-700/40 flex items-center gap-1 transition-colors"
+                title="Compartilhar com a esposa"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Esposa</span>
+              </button>
+
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1 transition-colors"
+              >
+                <History className="w-3.5 h-3.5 text-gamer-cyan" />
+                <span>Histórico</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -453,14 +450,14 @@ export function App() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         logs={logs}
-        profileName={activeProfile?.name || 'Filho'}
+        profileName="Gael"
         onUndoLog={handleUndoLog}
       />
 
       <CustomMinutesModal
         isOpen={isCustomAdjustOpen}
         onClose={() => setIsCustomAdjustOpen(false)}
-        profileName={activeProfile?.name || 'Filho'}
+        profileName="Gael"
         onSubmitCustom={handleCustomAdjust}
         onCreateTemplate={handleCreateTemplate}
       />
@@ -471,10 +468,18 @@ export function App() {
         onRefresh={loadData}
       />
 
-      <AddProfileModal
-        isOpen={isAddProfileOpen}
-        onClose={() => setIsAddProfileOpen(false)}
-        onAdd={handleAddProfile}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        currentAuthor={currentAuthor}
+      />
+
+      {/* Dedicated Loud Alarm Modal when countdown reaches 0 */}
+      <AlarmModal
+        isOpen={isAlarmModalOpen}
+        kidName="Gael"
+        onDismiss={handleStopSessionTimer}
+        onAddTolerance={handleAddMinutesToSession}
       />
     </div>
   )

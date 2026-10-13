@@ -7,7 +7,7 @@ create extension if not exists "uuid-ossp";
 
 -- 1. PROFILES TABLE
 create table if not exists public.profiles (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   current_balance_minutes integer not null default 0,
   daily_max_minutes integer not null default 90,
@@ -17,7 +17,7 @@ create table if not exists public.profiles (
 
 -- 2. TASK TEMPLATES TABLE
 create table if not exists public.task_templates (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   title text not null,
   minutes_reward integer not null, -- positivo para ganho, negativo para penalidade/uso
   icon text not null default 'Gamepad2',
@@ -28,12 +28,24 @@ create table if not exists public.task_templates (
 
 -- 3. BALANCE LOGS TABLE
 create table if not exists public.balance_logs (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
   task_title text not null,
   minutes_applied integer not null,
-  recorded_by text not null check (recorded_by in ('Pai', 'Mãe')),
+  recorded_by text not null check (recorded_by in ('Papai', 'Mamãe')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 4. ACTIVE SESSIONS TABLE (Cronômetro em tempo real sincronizado entre Papai e Mamãe)
+create table if not exists public.active_sessions (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  profile_name text not null,
+  start_time bigint not null,
+  end_time bigint not null,
+  total_minutes integer not null,
+  is_active boolean not null default true,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create helpful indexes
@@ -45,8 +57,9 @@ create index if not exists idx_task_templates_category on public.task_templates(
 alter table public.profiles enable row level security;
 alter table public.task_templates enable row level security;
 alter table public.balance_logs enable row level security;
+alter table public.active_sessions enable row level security;
 
--- Policies for anon & authenticated access (Parent dashboard quick mode)
+-- Policies for access
 create policy "Allow all operations for profiles" on public.profiles
   for all using (true) with check (true);
 
@@ -56,21 +69,23 @@ create policy "Allow all operations for task_templates" on public.task_templates
 create policy "Allow all operations for balance_logs" on public.balance_logs
   for all using (true) with check (true);
 
+create policy "Allow all operations for active_sessions" on public.active_sessions
+  for all using (true) with check (true);
+
 -- Enable Supabase Realtime for instant multi-device sync
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.balance_logs;
 alter publication supabase_realtime add table public.task_templates;
+alter publication supabase_realtime add table public.active_sessions;
 
 -- =========================================================
--- SEED DATA
+-- SEED DATA (Apenas Gael como filho)
 -- =========================================================
 
--- Profiles
 insert into public.profiles (id, name, current_balance_minutes, daily_max_minutes)
 values 
-  ('11111111-1111-1111-1111-111111111111', 'Lucas (Filho)', 45, 90),
-  ('22222222-2222-2222-2222-222222222222', 'Sofia (Filha)', 30, 90)
-on conflict (id) do nothing;
+  ('11111111-1111-1111-1111-111111111111', 'Gael', 45, 90)
+on conflict (id) do update set name = 'Gael';
 
 -- Task Templates
 insert into public.task_templates (title, minutes_reward, icon, category, active)
@@ -95,8 +110,8 @@ values
   -- Alertas / Penalidades
   ('Desobediência / Birra', -15, 'AlertTriangle', 'penalidade', true),
   ('Enrolar / Reclamar', -10, 'ClockAlert', 'penalidade', true),
-  ('Briga com Irmão(ã)', -20, 'Flame', 'penalidade', true),
   ('Não Desligar na Hora', -30, 'Skull', 'penalidade', true),
+  ('Falar Mal / Gritar', -15, 'Flame', 'penalidade', true),
 
   -- Resgate / Jogo
   ('🎮 Iniciar Jogo (Sessão Rápida)', -15, 'Zap', 'resgate', true),

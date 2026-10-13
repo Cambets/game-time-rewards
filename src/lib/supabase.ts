@@ -1,8 +1,44 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Retrieve credentials from Vite env or LocalStorage fallback (allows config directly in app)
 const envUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+// Check URL parameters or hash for instant one-click pairing between spouses
+const checkUrlForPairing = () => {
+  if (typeof window === 'undefined') return
+
+  try {
+    const urlObj = new URL(window.location.href)
+    let urlParam = urlObj.searchParams.get('sb_url')
+    let keyParam = urlObj.searchParams.get('sb_key')
+    const roleParam = urlObj.searchParams.get('role')
+
+    // Also check hash #sb_url=...&sb_key=...
+    if (!urlParam && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      urlParam = hashParams.get('sb_url')
+      keyParam = hashParams.get('sb_key')
+    }
+
+    if (urlParam && keyParam) {
+      saveSupabaseConfig(decodeURIComponent(urlParam), decodeURIComponent(keyParam))
+      if (roleParam === 'mamae') {
+        localStorage.setItem('gametime_author', 'Mamãe')
+      } else if (roleParam === 'papai') {
+        localStorage.setItem('gametime_author', 'Papai')
+      }
+      
+      // Clean URL from browser bar without page reload
+      const cleanUrl = window.location.origin + window.location.pathname
+      window.history.replaceState({}, document.title, cleanUrl)
+    }
+  } catch (e) {
+    console.warn('Erro ao processar link de pareamento:', e)
+  }
+}
+
+// Run pairing check immediately
+checkUrlForPairing()
 
 export const getStoredSupabaseConfig = () => {
   const customUrl = localStorage.getItem('gametime_supabase_url') || envUrl
@@ -22,6 +58,18 @@ export const saveSupabaseConfig = (url: string, key: string) => {
     localStorage.removeItem('gametime_supabase_url')
     localStorage.removeItem('gametime_supabase_key')
   }
+}
+
+export const generateShareLink = (targetRole: 'Mamãe' | 'Papai'): string => {
+  const { url, key, isConfigured } = getStoredSupabaseConfig()
+  const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'http://localhost:5173'
+  
+  if (!isConfigured) {
+    return base
+  }
+
+  const roleSlug = targetRole === 'Mamãe' ? 'mamae' : 'papai'
+  return `${base}?sb_url=${encodeURIComponent(url)}&sb_key=${encodeURIComponent(key)}&role=${roleSlug}`
 }
 
 let supabaseInstance: SupabaseClient | null = null

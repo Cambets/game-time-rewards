@@ -36,22 +36,41 @@ create table if not exists public.balance_logs (
   profile_id uuid not null references public.profiles(id) on delete cascade,
   task_title text not null,
   minutes_applied integer not null,
-  recorded_by text not null check (recorded_by in ('Pai', 'Mãe')),
+  recorded_by text not null check (recorded_by in ('Papai', 'Mamãe')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 4. ACTIVE SESSIONS TABLE (Cronômetro sincronizado)
+create table if not exists public.active_sessions (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  profile_name text not null,
+  start_time bigint not null,
+  end_time bigint not null,
+  total_minutes integer not null,
+  is_active boolean not null default true,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Enable RLS & Realtime
 alter table public.profiles enable row level security;
 alter table public.task_templates enable row level security;
 alter table public.balance_logs enable row level security;
+alter table public.active_sessions enable row level security;
 
 create policy "Allow all profiles" on public.profiles for all using (true) with check (true);
 create policy "Allow all task_templates" on public.task_templates for all using (true) with check (true);
 create policy "Allow all balance_logs" on public.balance_logs for all using (true) with check (true);
+create policy "Allow all active_sessions" on public.active_sessions for all using (true) with check (true);
 
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.balance_logs;
-alter publication supabase_realtime add table public.task_templates;`
+alter publication supabase_realtime add table public.task_templates;
+alter publication supabase_realtime add table public.active_sessions;
+
+-- Seed inicial para o Gael
+insert into public.profiles (name, current_balance_minutes, daily_max_minutes)
+values ('Gael', 45, 90) on conflict do nothing;`
 
 export const SupabaseModal: React.FC<SupabaseModalProps> = ({
   isOpen,

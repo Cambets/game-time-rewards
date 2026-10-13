@@ -1,30 +1,26 @@
 import React from 'react'
 import { ParentAuthor, Profile } from '../types'
-import { Gamepad2, Volume2, VolumeX, Database, Users, Plus } from 'lucide-react'
+import { Gamepad2, Volume2, VolumeX, Database, Share2, Sparkles } from 'lucide-react'
 
 interface HeaderProps {
   currentAuthor: ParentAuthor
   onSelectAuthor: (author: ParentAuthor) => void
-  profiles: Profile[]
   activeProfile: Profile | null
-  onSelectProfile: (profile: Profile) => void
-  onAddProfile: () => void
   soundEnabled: boolean
   onToggleSound: () => void
   onOpenSettings: () => void
+  onOpenShare: () => void
   supabaseConnected: boolean
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentAuthor,
   onSelectAuthor,
-  profiles,
   activeProfile,
-  onSelectProfile,
-  onAddProfile,
   soundEnabled,
   onToggleSound,
   onOpenSettings,
+  onOpenShare,
   supabaseConnected,
 }) => {
   return (
@@ -44,16 +40,26 @@ export const Header: React.FC<HeaderProps> = ({
                 </h1>
               </div>
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                Missões & Tempo de Jogo
+                Missões & Tempo de Jogo do Gael
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Share with Spouse Button */}
+            <button
+              onClick={onOpenShare}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-pink-950/60 text-pink-300 border border-pink-500/40 hover:bg-pink-900/60 transition-colors"
+              title="Compartilhar com Mamãe/Papai"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="text-[11px] hidden xs:inline">Esposa</span>
+            </button>
+
             {/* Supabase Status Pill */}
             <button
               onClick={onOpenSettings}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
                 supabaseConnected
                   ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40 hover:bg-emerald-900/60'
                   : 'bg-slate-800/80 text-amber-400 border-amber-500/30 hover:bg-slate-700/80'
@@ -62,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Database className="w-3.5 h-3.5" />
               <span className="text-[11px] hidden xs:inline">
-                {supabaseConnected ? 'Supabase' : 'Local'}
+                {supabaseConnected ? 'Ao Vivo' : 'Local'}
               </span>
             </button>
 
@@ -82,83 +88,57 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Author Switcher: "Quem está registrando? [ Pai ] [ Mãe ]" */}
+        {/* Author Switcher: "Quem está registrando? [ Papai ] [ Mamãe ]" */}
         <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2 shadow-inner">
           <span className="text-xs font-semibold text-slate-400 pl-2 select-none">
             Quem está registrando?
           </span>
           <div className="grid grid-cols-2 gap-1.5">
             <button
-              onClick={() => onSelectAuthor('Pai')}
+              onClick={() => onSelectAuthor('Papai')}
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                currentAuthor === 'Pai'
+                currentAuthor === 'Papai'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-900/40 border border-blue-400/30 scale-[1.02]'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <span>🧔</span>
-              <span>Pai</span>
+              <span>Papai</span>
             </button>
             <button
-              onClick={() => onSelectAuthor('Mãe')}
+              onClick={() => onSelectAuthor('Mamãe')}
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                currentAuthor === 'Mãe'
+                currentAuthor === 'Mamãe'
                   ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-900/40 border border-pink-400/30 scale-[1.02]'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <span>👩</span>
-              <span>Mãe</span>
+              <span>Mamãe</span>
             </button>
           </div>
         </div>
 
-        {/* Kid Profile Selector Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-          <div className="text-xs text-slate-500 font-semibold flex items-center gap-1 shrink-0 pl-1">
-            <Users className="w-3.5 h-3.5" />
-            <span>Filho(a):</span>
+        {/* Dedicated Child Header: GAEL */}
+        {activeProfile && (
+          <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-gradient-to-r from-gamer-purple/15 to-slate-900 border border-gamer-purple/30 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-gamer-green shadow-glow-green" />
+              <span className="font-gamer font-bold text-sm text-white tracking-wide">
+                Gael
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">
+                (Filho)
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-400">Saldo atual:</span>
+              <span className="font-gamer font-bold text-xs text-gamer-green bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-mono">
+                {activeProfile.current_balance_minutes} MIN
+              </span>
+            </div>
           </div>
-          {profiles.map((profile) => {
-            const isSelected = activeProfile?.id === profile.id
-            return (
-              <button
-                key={profile.id}
-                onClick={() => onSelectProfile(profile)}
-                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
-                  isSelected
-                    ? 'bg-gamer-purple/20 text-gamer-purple-light border-gamer-purple shadow-glow-purple scale-[1.02]'
-                    : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
-                }`}
-              >
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    isSelected ? 'bg-gamer-green shadow-glow-green' : 'bg-slate-600'
-                  }`}
-                />
-                <span>{profile.name}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                    isSelected
-                      ? 'bg-gamer-purple/40 text-purple-200'
-                      : 'bg-slate-800 text-slate-500'
-                  }`}
-                >
-                  {profile.current_balance_minutes}m
-                </span>
-              </button>
-            )
-          })}
-
-          <button
-            onClick={onAddProfile}
-            className="shrink-0 p-1.5 rounded-xl text-xs font-medium text-slate-400 bg-slate-900/40 border border-dashed border-slate-700 hover:text-white hover:border-slate-500 transition-colors flex items-center gap-1"
-            title="Adicionar Filho(a)"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="text-[11px] pr-1">Novo</span>
-          </button>
-        </div>
+        )}
       </div>
     </header>
   )

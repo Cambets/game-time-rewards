@@ -1,4 +1,4 @@
-export type ParentAuthor = 'Pai' | 'Mãe'
+export type ParentAuthor = 'Papai' | 'Mamãe'
 
 export type TaskCategory = 'rotina' | 'escola' | 'casa' | 'penalidade' | 'resgate'
 
@@ -35,6 +35,7 @@ export interface ActiveGameSession {
   profileId: string
   profileName: string
   startTime: number // epoch ms
+  endTime: number // epoch ms para sincronização exata entre aparelhos
   totalMinutes: number
   remainingSeconds: number
   isActive: boolean
