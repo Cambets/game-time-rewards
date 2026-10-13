@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Sparkles, Trophy, X, Zap, Gift, RotateCcw, Award } from 'lucide-react'
+import { Sparkles, Trophy, X, Zap, Gift, RotateCcw, Lock, Ticket } from 'lucide-react'
 import { sounds } from '../lib/sound'
 import confetti from 'canvas-confetti'
 
 interface LuckyWheelModalProps {
   isOpen: boolean
   onClose: () => void
+  spinsAvailable: number
   onWinPrize: (minutes: number, xp: number, prizeTitle: string) => void
 }
 
@@ -29,6 +30,7 @@ const SECTORS: Sector[] = [
 export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
   isOpen,
   onClose,
+  spinsAvailable,
   onWinPrize,
 }) => {
   const [isSpinning, setIsSpinning] = useState(false)
@@ -37,8 +39,10 @@ export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
 
   if (!isOpen) return null
 
+  const canSpin = spinsAvailable > 0 && !isSpinning
+
   const handleSpin = () => {
-    if (isSpinning) return
+    if (!canSpin) return
 
     setIsSpinning(true)
     setWonSector(null)
@@ -105,9 +109,26 @@ export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
           </button>
         </div>
 
-        <p className="text-xs text-slate-400">
-          Gire para ganhar minutos extras e pontos de XP para subir de nível!
-        </p>
+        {/* Status: Spins available or locked by parents */}
+        <div className="flex justify-center">
+          {spinsAvailable > 0 ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold font-mono animate-pulse">
+              <Ticket className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{spinsAvailable} Giro(s) Liberado(s) pelo Papai/Mamãe! 🎟️</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-bold">
+              <Lock className="w-3.5 h-3.5 text-rose-400" />
+              <span>Roleta Bloqueada pelos Pais</span>
+            </div>
+          )}
+        </div>
+
+        {spinsAvailable <= 0 && !wonSector && (
+          <p className="text-xs text-amber-300/90 font-medium px-2 leading-relaxed bg-amber-950/30 p-2 rounded-xl border border-amber-500/30">
+            Cumpra suas missões em casa! O Papai ou a Mamãe liberam giros extras para você quando você for um bom filho!
+          </p>
+        )}
 
         {/* Wheel Graphic */}
         <div className="relative mx-auto w-56 h-56 my-3 flex items-center justify-center">
@@ -116,7 +137,9 @@ export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
 
           {/* Rotating Wheel Container */}
           <div
-            className="w-full h-full rounded-full border-4 border-amber-400/80 shadow-2xl relative overflow-hidden transition-transform duration-[3200ms] cubic-bezier(0.15, 0.9, 0.2, 1)"
+            className={`w-full h-full rounded-full border-4 shadow-2xl relative overflow-hidden transition-transform duration-[3200ms] cubic-bezier(0.15, 0.9, 0.2, 1) ${
+              spinsAvailable > 0 ? 'border-amber-400/90' : 'border-slate-700 opacity-60'
+            }`}
             style={{
               transform: `rotate(${rotation}deg)`,
               background: 'conic-gradient(#10b981 0deg 60deg, #8b5cf6 60deg 120deg, #06b6d4 120deg 180deg, #f59e0b 180deg 240deg, #ec4899 240deg 300deg, #a855f7 300deg 360deg)',
@@ -139,10 +162,10 @@ export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
             })}
           </div>
 
-          {/* Center Hub Button */}
+          {/* Center Hub */}
           <div className="absolute z-10 w-16 h-16 rounded-full bg-slate-950 border-4 border-amber-400 flex items-center justify-center shadow-lg">
             <span className="font-gamer font-bold text-xs text-amber-400 tracking-wider">
-              GAEL
+              {spinsAvailable > 0 ? 'GAEL' : '🔒'}
             </span>
           </div>
         </div>
@@ -165,20 +188,30 @@ export const LuckyWheelModal: React.FC<LuckyWheelModalProps> = ({
           </div>
         )}
 
-        {/* Spin Button */}
+        {/* Spin Action */}
         <div className="pt-2">
-          <button
-            onClick={handleSpin}
-            disabled={isSpinning}
-            className={`w-full py-4 rounded-2xl font-gamer font-bold text-base shadow-glow-purple transition-all flex items-center justify-center gap-2 ${
-              isSpinning
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-glow-amber active:scale-95'
-            }`}
-          >
-            <RotateCcw className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
-            <span>{isSpinning ? 'GIRANDO A ROLETA...' : 'GIRAR A ROLETA! 🎰'}</span>
-          </button>
+          {spinsAvailable > 0 ? (
+            <button
+              onClick={handleSpin}
+              disabled={isSpinning}
+              className={`w-full py-4 rounded-2xl font-gamer font-bold text-base shadow-glow-amber transition-all flex items-center justify-center gap-2 ${
+                isSpinning
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 active:scale-95'
+              }`}
+            >
+              <RotateCcw className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
+              <span>{isSpinning ? 'GIRANDO A ROLETA...' : 'GIRAR A ROLETA! 🎰 (1 Giro)'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={onClose}
+              className="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-colors"
+            >
+              <Lock className="w-4 h-4 text-amber-400" />
+              <span>Peça ao Papai ou Mamãe para Liberar um Giro 🎟️</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

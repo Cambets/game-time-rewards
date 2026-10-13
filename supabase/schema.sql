@@ -13,6 +13,9 @@ create table if not exists public.profiles (
   daily_max_minutes integer not null default 90,
   avatar_id text not null default 'warrior',
   xp integer not null default 120,
+  roulette_spins integer not null default 0,
+  last_praise text,
+  last_praise_author text,
   avatar_url text,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

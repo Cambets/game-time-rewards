@@ -8,6 +8,7 @@ import { GameOverScreen } from './components/GameOverScreen'
 import { PendingApprovalsBanner } from './components/PendingApprovalsBanner'
 import { PinModal } from './components/PinModal'
 import { BalanceHeroCard } from './components/BalanceHeroCard'
+import { ParentRouletteControl } from './components/ParentRouletteControl'
 import { ActiveTimerCard } from './components/ActiveTimerCard'
 import { QuickMissionsGrid } from './components/QuickMissionsGrid'
 import { HistoryDrawer } from './components/HistoryDrawer'
@@ -214,6 +215,9 @@ export function App() {
 
     try {
       await dataService.approvePendingTask(task.id, currentAuthor)
+      if (praise && activeProfile) {
+        await dataService.savePraiseMessage(activeProfile.id, praise, currentAuthor)
+      }
       setPendingTasks((prev) => prev.filter((p) => p.id !== task.id))
       addToast(
         `Missão "${task.task_title}" aprovada! (+${task.minutes_reward}m)`,
@@ -232,6 +236,7 @@ export function App() {
     if (!activeProfile) return
 
     try {
+      await dataService.consumeRouletteSpin(activeProfile.id)
       if (minutes > 0) {
         await dataService.addBalanceLog({
           profile_id: activeProfile.id,
@@ -248,6 +253,39 @@ export function App() {
       loadData()
     } catch (e) {
       console.error('Failed to claim roulette prize:', e)
+    }
+  }
+
+  // Parent grants roulette spins for Gael
+  const handleGrantRouletteSpin = async (spinsCount: number = 1) => {
+    if (!activeProfile) return
+    try {
+      await dataService.addRouletteSpins(activeProfile.id, spinsCount)
+      if (soundEnabled) {
+        sounds.play1Up()
+        triggerConfetti()
+      }
+      addToast(
+        `🎟️ ${spinsCount} Giro(s) de Roleta liberado(s) para o Gael!`,
+        `Autorizado por ${currentAuthor}. Gael agora pode girar a Roleta no QG dele!`,
+        'success'
+      )
+      loadData()
+    } catch (e) {
+      console.error('Failed to grant roulette spins:', e)
+    }
+  }
+
+  // Parent locks roulette spins
+  const handleLockRouletteSpins = async () => {
+    if (!activeProfile) return
+    try {
+      await dataService.lockRouletteSpins(activeProfile.id)
+      if (soundEnabled) sounds.playPenalty()
+      addToast('Roleta travada 🔒', 'Gael não tem mais giros até que você libere.', 'info')
+      loadData()
+    } catch (e) {
+      console.error('Failed to lock roulette spins:', e)
     }
   }
 
@@ -524,6 +562,14 @@ export function App() {
                   onQuickRedeem={handleStartSessionTimer}
                   onOpenCustomAdjust={() => setIsCustomAdjustOpen(true)}
                   onStartSessionTimer={handleStartSessionTimer}
+                />
+
+                {/* Controle da Roleta da Sorte: Pais liberam quando Gael pode girar */}
+                <ParentRouletteControl
+                  profile={activeProfile}
+                  currentAuthor={currentAuthor}
+                  onGrantSpins={handleGrantRouletteSpin}
+                  onLockSpins={handleLockRouletteSpins}
                 />
 
                 {/* Quick Missions 1-Touch Grid */}

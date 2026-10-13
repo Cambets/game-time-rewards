@@ -4,6 +4,8 @@ import { DynamicIcon } from './DynamicIcon'
 import { LuckyWheelModal } from './LuckyWheelModal'
 import { AchievementsModal } from './AchievementsModal'
 import { PixelPetCompanion } from './PixelPetCompanion'
+import { GamerSoundboardModal } from './GamerSoundboardModal'
+import { dataService } from '../services/dataService'
 import {
   Gamepad2,
   Trophy,
@@ -19,7 +21,13 @@ import {
   Rocket,
   Shield,
   Zap,
-  Gift
+  Gift,
+  Heart,
+  Volume2,
+  Lock,
+  Ticket,
+  MessageSquareHeart,
+  X
 } from 'lucide-react'
 import { sounds } from '../lib/sound'
 import confetti from 'canvas-confetti'
@@ -55,7 +63,11 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   const [showStartModal, setShowStartModal] = useState(false)
   const [showLuckyWheel, setShowLuckyWheel] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
+  const [showSoundboard, setShowSoundboard] = useState(false)
+  const [dismissedPraise, setDismissedPraise] = useState(false)
   const [chosenMinutes, setChosenMinutes] = useState<number>(30)
+
+  const spinsAvailable = profile.roulette_spins || 0
 
   const balance = profile.current_balance_minutes
   const currentAvatarId = (profile.avatar_id as KidAvatar) || 'warrior'
@@ -158,37 +170,119 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         </div>
       </div>
 
-      {/* Quick Interactive Mini-Features: Roleta da Sorte & Troféus */}
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* Elogio Especial dos Pais (se houver) */}
+      {profile.last_praise && !dismissedPraise && (
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-pink-950/70 via-purple-950/70 to-slate-900 border border-pink-500/50 shadow-glow-purple animate-scale-up space-y-2 relative overflow-hidden">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl animate-bounce">💌</span>
+              <div>
+                <h4 className="font-gamer font-bold text-xs text-pink-300 flex items-center gap-1.5">
+                  <span>RECADINHO DO {profile.last_praise_author ? profile.last_praise_author.toUpperCase() : 'PAPAI E MAMÃE'}!</span>
+                  <span className="text-[10px] bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full border border-pink-500/30">
+                    Com Amor ❤️
+                  </span>
+                </h4>
+                <p className="text-sm font-bold text-white mt-0.5">
+                  "{profile.last_praise}"
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setDismissedPraise(true)
+                dataService.dismissPraise(profile.id)
+              }}
+              className="p-1 rounded-xl text-slate-400 hover:text-white"
+              title="Fechar recadinho"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              onClick={() => {
+                sounds.playPetReaction()
+                confetti({
+                  particleCount: 35,
+                  spread: 60,
+                  origin: { y: 0.6 },
+                  colors: ['#ec4899', '#f43f5e', '#a855f7'],
+                })
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-pink-600/80 hover:bg-pink-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+            >
+              <Heart className="w-3.5 h-3.5 fill-current" />
+              <span>Mandar Corações! ❤️</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Interactive Mini-Features: Roleta da Sorte, Troféus & Soundboard */}
+      <div className="grid grid-cols-3 gap-2">
         {/* Roleta da Sorte Button */}
         <button
           onClick={() => setShowLuckyWheel(true)}
-          className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-orange-950/70 border border-amber-500/50 hover:border-amber-400 shadow-glow-amber text-left flex items-center gap-2.5 active:scale-95 transition-all group"
+          className={`p-3 rounded-2xl border text-left flex flex-col justify-between active:scale-95 transition-all group relative overflow-hidden ${
+            spinsAvailable > 0
+              ? 'bg-gradient-to-b from-amber-950/80 via-slate-900 to-orange-950/80 border-amber-400 shadow-glow-amber'
+              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 opacity-90'
+          }`}
         >
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 group-hover:rotate-45 transition-transform">
-            <Gift className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center justify-between w-full">
+            <div className={`p-1.5 rounded-xl ${spinsAvailable > 0 ? 'bg-amber-500/20 text-amber-400 group-hover:rotate-45' : 'bg-slate-800 text-slate-400'} transition-transform`}>
+              <Gift className="w-4 h-4 text-amber-400" />
+            </div>
+            {spinsAvailable > 0 ? (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-500/40 animate-pulse font-mono">
+                {spinsAvailable} 🎟️
+              </span>
+            ) : (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
+                🔒
+              </span>
+            )}
           </div>
-          <div>
-            <h4 className="font-gamer font-bold text-xs text-amber-300 leading-tight">
-              ROLETA DA SORTE 🎰
+          <div className="mt-2">
+            <h4 className="font-gamer font-bold text-[11px] text-amber-300 leading-tight">
+              ROLETA 🎰
             </h4>
-            <span className="text-[10px] text-slate-400">Girar e Ganhar!</span>
+            <span className="text-[9px] text-slate-400 block leading-tight mt-0.5">
+              {spinsAvailable > 0 ? `${spinsAvailable} Giro(s)!` : 'Peça ao Pais'}
+            </span>
           </div>
         </button>
 
         {/* Mural de Troféus Button */}
         <button
           onClick={() => setShowAchievements(true)}
-          className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/50 hover:border-purple-400 shadow-glow-purple text-left flex items-center gap-2.5 active:scale-95 transition-all group"
+          className="p-3 rounded-2xl bg-gradient-to-b from-purple-950/80 via-slate-900 to-indigo-950/80 border border-purple-500/50 hover:border-purple-400 shadow-glow-purple text-left flex flex-col justify-between active:scale-95 transition-all group"
         >
-          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
-            <Trophy className="w-5 h-5 text-amber-400" />
+          <div className="p-1.5 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform w-fit">
+            <Trophy className="w-4 h-4 text-amber-400" />
           </div>
-          <div>
-            <h4 className="font-gamer font-bold text-xs text-purple-300 leading-tight">
-              MEUS TROFÉUS 🏆
+          <div className="mt-2">
+            <h4 className="font-gamer font-bold text-[11px] text-purple-300 leading-tight">
+              TROFÉUS 🏆
             </h4>
-            <span className="text-[10px] text-slate-400">Mural Gamer</span>
+            <span className="text-[9px] text-slate-400 block leading-tight mt-0.5">Mural Gamer</span>
+          </div>
+        </button>
+
+        {/* Sons Retrô 8-bit Soundboard */}
+        <button
+          onClick={() => setShowSoundboard(true)}
+          className="p-3 rounded-2xl bg-gradient-to-b from-cyan-950/80 via-slate-900 to-blue-950/80 border border-cyan-500/50 hover:border-cyan-400 shadow-glow-cyan text-left flex flex-col justify-between active:scale-95 transition-all group"
+        >
+          <div className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform w-fit">
+            <Volume2 className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div className="mt-2">
+            <h4 className="font-gamer font-bold text-[11px] text-cyan-300 leading-tight">
+              SONS 🔊
+            </h4>
+            <span className="text-[9px] text-slate-400 block leading-tight mt-0.5">8-Bit Mario</span>
           </div>
         </button>
       </div>
@@ -419,6 +513,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
       <LuckyWheelModal
         isOpen={showLuckyWheel}
         onClose={() => setShowLuckyWheel(false)}
+        spinsAvailable={spinsAvailable}
         onWinPrize={onWinRoulettePrize}
       />
 
@@ -428,6 +523,12 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         onClose={() => setShowAchievements(false)}
         userXp={totalXp}
         totalMinutes={balance}
+      />
+
+      {/* Gamer Retro Soundboard */}
+      <GamerSoundboardModal
+        isOpen={showSoundboard}
+        onClose={() => setShowSoundboard(false)}
       />
     </div>
   )

@@ -4,6 +4,8 @@ export type AppMode = 'kid' | 'parent'
 
 export type KidAvatar = 'warrior' | 'robot' | 'mage' | 'racer' | 'astronaut'
 
+export type PetType = 'robot' | 'dragon' | 'dog' | 'cat'
+
 export type TaskCategory = 'rotina' | 'escola' | 'casa' | 'penalidade' | 'resgate'
 
 export interface Profile {
@@ -13,6 +15,9 @@ export interface Profile {
   daily_max_minutes: number
   avatar_id?: KidAvatar
   xp?: number
+  roulette_spins?: number // Giros disponíveis da Roleta concedidos pelos Pais
+  last_praise?: string
+  last_praise_author?: ParentAuthor
   avatar_url?: string
   updated_at: string
 }

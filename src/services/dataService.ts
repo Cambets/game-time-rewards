@@ -218,6 +218,137 @@ export const dataService = {
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
   },
 
+  async addRouletteSpins(profileId: string, count = 1): Promise<Profile> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data: current } = await supabase.from('profiles').select('*').eq('id', profileId).single()
+        if (current) {
+          const newSpins = (current.roulette_spins || 0) + count
+          const { data: updated } = await supabase
+            .from('profiles')
+            .update({ roulette_spins: newSpins, updated_at: new Date().toISOString() })
+            .eq('id', profileId)
+            .select()
+            .single()
+          if (updated) return updated as Profile
+        }
+      } catch (err) {
+        console.warn('Supabase addRouletteSpins failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    let res: Profile = profiles[0]
+    const updated = profiles.map(p => {
+      if (p.id === profileId) {
+        res = { ...p, roulette_spins: (p.roulette_spins || 0) + count, updated_at: new Date().toISOString() }
+        return res
+      }
+      return p
+    })
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+    return res
+  },
+
+  async consumeRouletteSpin(profileId: string): Promise<Profile> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data: current } = await supabase.from('profiles').select('*').eq('id', profileId).single()
+        if (current) {
+          const newSpins = Math.max(0, (current.roulette_spins || 0) - 1)
+          const { data: updated } = await supabase
+            .from('profiles')
+            .update({ roulette_spins: newSpins, updated_at: new Date().toISOString() })
+            .eq('id', profileId)
+            .select()
+            .single()
+          if (updated) return updated as Profile
+        }
+      } catch (err) {
+        console.warn('Supabase consumeRouletteSpin failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    let res: Profile = profiles[0]
+    const updated = profiles.map(p => {
+      if (p.id === profileId) {
+        res = { ...p, roulette_spins: Math.max(0, (p.roulette_spins || 0) - 1), updated_at: new Date().toISOString() }
+        return res
+      }
+      return p
+    })
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+    return res
+  },
+
+  async lockRouletteSpins(profileId: string): Promise<Profile> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data: updated } = await supabase
+          .from('profiles')
+          .update({ roulette_spins: 0, updated_at: new Date().toISOString() })
+          .eq('id', profileId)
+          .select()
+          .single()
+        if (updated) return updated as Profile
+      } catch (err) {
+        console.warn('Supabase lockRouletteSpins failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    let res: Profile = profiles[0]
+    const updated = profiles.map(p => {
+      if (p.id === profileId) {
+        res = { ...p, roulette_spins: 0, updated_at: new Date().toISOString() }
+        return res
+      }
+      return p
+    })
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+    return res
+  },
+
+  async savePraiseMessage(profileId: string, praise: string, author: ParentAuthor): Promise<void> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ last_praise: praise, last_praise_author: author, updated_at: new Date().toISOString() })
+          .eq('id', profileId)
+      } catch (err) {
+        console.warn('Supabase savePraiseMessage failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    const updated = profiles.map(p => p.id === profileId ? { ...p, last_praise: praise, last_praise_author: author } : p)
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+  },
+
+  async dismissPraise(profileId: string): Promise<void> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ last_praise: null, last_praise_author: null })
+          .eq('id', profileId)
+      } catch (err) {
+        console.warn('Supabase dismissPraise failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    const updated = profiles.map(p => p.id === profileId ? { ...p, last_praise: undefined, last_praise_author: undefined } : p)
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+  },
+
   async updateDailyMax(profileId: string, dailyMaxMinutes: number): Promise<void> {
     const supabase = getSupabaseClient()
     if (supabase) {
