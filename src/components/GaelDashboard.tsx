@@ -5,6 +5,7 @@ import { LuckyWheelModal } from './LuckyWheelModal'
 import { AchievementsModal } from './AchievementsModal'
 import { PixelPetCompanion } from './PixelPetCompanion'
 import { GamerSoundboardModal } from './GamerSoundboardModal'
+import { LearningModal } from './LearningModal'
 import { dataService } from '../services/dataService'
 import {
   Gamepad2,
@@ -27,6 +28,7 @@ import {
   Lock,
   Ticket,
   MessageSquareHeart,
+  BookOpen,
   X
 } from 'lucide-react'
 import { sounds } from '../lib/sound'
@@ -40,6 +42,7 @@ interface GaelDashboardProps {
   onMarkTaskDone: (task: TaskTemplate) => void
   onChangeAvatar: (avatar: KidAvatar) => void
   onWinRoulettePrize: (minutes: number, xp: number, prizeTitle: string) => void
+  onCompleteLearningSession: (minutes: number, xp: number, lessonTitle: string) => void
 }
 
 const getTaskVisual = (title: string) => {
@@ -159,12 +162,14 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   onMarkTaskDone,
   onChangeAvatar,
   onWinRoulettePrize,
+  onCompleteLearningSession,
 }) => {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [showStartModal, setShowStartModal] = useState(false)
   const [showLuckyWheel, setShowLuckyWheel] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const [showSoundboard, setShowSoundboard] = useState(false)
+  const [showLearning, setShowLearning] = useState(false)
   const [dismissedPraise, setDismissedPraise] = useState(false)
   const [chosenMinutes, setChosenMinutes] = useState<number>(30)
 
@@ -174,8 +179,8 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   const currentAvatarId = (profile.avatar_id as KidAvatar) || 'warrior'
   const currentAvatar = AVATARS.find((a) => a.id === currentAvatarId) || AVATARS[0]
 
-  // XP & Level calculations
-  const totalXp = profile.xp || 140
+  // XP & Level calculations (starts at 0)
+  const totalXp = profile.xp || 0
   const level = Math.floor(totalXp / 50) + 1
   const xpCurrentLevel = totalXp % 50
   const xpNextLevel = 50
@@ -387,6 +392,37 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           </div>
         </button>
       </div>
+
+      {/* 🌟 BANNER DE DESTAQUE: MODO APRENDER (ACADEMIA DO CONHECIMENTO) */}
+      <button
+        onClick={() => setShowLearning(true)}
+        className="w-full p-3.5 rounded-3xl bg-gradient-to-r from-purple-950 via-indigo-950 to-blue-950 border-2 border-purple-500/80 hover:border-emerald-400 shadow-glow-purple text-left flex items-center justify-between gap-3 active:scale-[0.98] transition-all group relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="flex items-center gap-3.5">
+          <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+            <BookOpen className="w-6 h-6 text-yellow-300" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-gamer font-bold text-sm text-white tracking-wide">
+                MODO APRENDER 📖
+              </h3>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold animate-pulse font-mono">
+                +10 MIN GRÁTIS!
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5 font-medium">
+              Mini-jogos de leitura com som em voz alta!
+            </p>
+          </div>
+        </div>
+
+        <div className="shrink-0 p-2 rounded-2xl bg-purple-900/60 text-purple-200 group-hover:bg-emerald-600 group-hover:text-white transition-colors border border-purple-700/50">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+        </div>
+      </button>
 
       {/* 2. Mostrador Gigante de Minutos (Bateria de Game) */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900/90 via-slate-900 to-indigo-950/60 border-2 border-gamer-purple/50 p-6 text-center shadow-glow-purple">
@@ -632,6 +668,13 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
       <GamerSoundboardModal
         isOpen={showSoundboard}
         onClose={() => setShowSoundboard(false)}
+      />
+
+      {/* Educational Learning Modal (Academia do Conhecimento) */}
+      <LearningModal
+        isOpen={showLearning}
+        onClose={() => setShowLearning(false)}
+        onRewardEarned={onCompleteLearningSession}
       />
     </div>
   )

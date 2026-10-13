@@ -241,6 +241,35 @@ class SoundManager {
     }
   }
 
+  // 🌟 GENTLE TRY AGAIN (Incentivo fofo e sem punição para erros do Gael)
+  playGentleTryAgain() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(440, now)
+      osc.frequency.exponentialRampToValueAtTime(330, now + 0.15)
+
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.18)
+
+      this.vibrate([25])
+    } catch {
+      // Ignored
+    }
+  }
+
   // 🎮 SUPER MARIO POWER-UP (Iniciar Sessão de Jogo)
   playRedeem() {
     try {

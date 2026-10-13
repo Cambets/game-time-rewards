@@ -256,6 +256,32 @@ export function App() {
     }
   }
 
+  // Handle rewards earned in Learning Mode (Academia do Conhecimento)
+  const handleRewardEarnedFromLearning = async (minutes: number, xp: number, lessonTitle: string) => {
+    if (!activeProfile) return
+
+    try {
+      await dataService.addBalanceLog({
+        profile_id: activeProfile.id,
+        task_title: `📖 ${lessonTitle}`,
+        minutes_applied: minutes,
+        recorded_by: currentAuthor,
+      })
+      if (soundEnabled) {
+        sounds.play1Up()
+        triggerConfetti()
+      }
+      addToast(
+        `🏆 ${lessonTitle}! (+${minutes}m)`,
+        `Parabéns, Gael! +${minutes} minutos adicionados à bateria!`,
+        'success'
+      )
+      loadData()
+    } catch (e) {
+      console.error('Failed to credit learning reward:', e)
+    }
+  }
+
   // Parent grants roulette spins for Gael
   const handleGrantRouletteSpin = async (spinsCount: number = 1) => {
     if (!activeProfile) return
@@ -553,6 +579,7 @@ export function App() {
                 onMarkTaskDone={handleMarkTaskDone}
                 onChangeAvatar={handleChangeAvatar}
                 onWinRoulettePrize={handleWinRoulettePrize}
+                onCompleteLearningSession={handleRewardEarnedFromLearning}
               />
             ) : (
               /* =========================================

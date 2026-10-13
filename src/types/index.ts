@@ -61,3 +61,19 @@ export interface ActiveGameSession {
   remainingSeconds: number
   isActive: boolean
 }
+
+export type LearningChallengeType = 'word_match' | 'missing_letter' | 'initial_sound'
+
+export interface LearningChallenge {
+  id: string
+  type: LearningChallengeType
+  target_word: string
+  display_text?: string
+  missing_letter?: string
+  image_emoji_or_url: string
+  options: string[]
+  correct_answer: string
+  audio_prompt: string
+  reward_minutes?: number
+}
+

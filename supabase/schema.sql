@@ -64,6 +64,21 @@ create table if not exists public.pending_tasks (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 6. LEARNING CHALLENGES TABLE (Modo Aprender / Academia do Conhecimento)
+create table if not exists public.learning_challenges (
+  id text primary key,
+  type text not null check (type in ('word_match', 'missing_letter', 'initial_sound')),
+  target_word text not null,
+  display_text text,
+  missing_letter text,
+  image_emoji_or_url text not null,
+  options jsonb not null,
+  correct_answer text not null,
+  audio_prompt text not null,
+  reward_minutes integer not null default 5,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Create helpful indexes
 create index if not exists idx_balance_logs_profile_id on public.balance_logs(profile_id);
 create index if not exists idx_balance_logs_created_at on public.balance_logs(created_at desc);
@@ -76,6 +91,7 @@ alter table public.task_templates enable row level security;
 alter table public.balance_logs enable row level security;
 alter table public.active_sessions enable row level security;
 alter table public.pending_tasks enable row level security;
+alter table public.learning_challenges enable row level security;
 
 -- Policies for access
 create policy "Allow all operations for profiles" on public.profiles
@@ -93,12 +109,16 @@ create policy "Allow all operations for active_sessions" on public.active_sessio
 create policy "Allow all operations for pending_tasks" on public.pending_tasks
   for all using (true) with check (true);
 
+create policy "Allow all operations for learning_challenges" on public.learning_challenges
+  for all using (true) with check (true);
+
 -- Enable Supabase Realtime for instant multi-device sync
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.balance_logs;
 alter publication supabase_realtime add table public.task_templates;
 alter publication supabase_realtime add table public.active_sessions;
 alter publication supabase_realtime add table public.pending_tasks;
+alter publication supabase_realtime add table public.learning_challenges;
 
 -- =========================================================
 -- SEED DATA (Gael)
