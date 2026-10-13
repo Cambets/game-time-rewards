@@ -42,6 +42,107 @@ interface GaelDashboardProps {
   onWinRoulettePrize: (minutes: number, xp: number, prizeTitle: string) => void
 }
 
+const getTaskVisual = (title: string) => {
+  const lower = title.toLowerCase()
+  if (lower.includes('cama')) {
+    return {
+      emoji: '🛏️',
+      color: 'from-blue-600/30 to-indigo-600/20',
+      border: 'border-blue-500/50',
+      badge: 'Caminha Arrumada',
+      badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-500/40',
+    }
+  }
+  if (lower.includes('brinquedo')) {
+    return {
+      emoji: '🧸',
+      color: 'from-amber-600/30 to-orange-600/20',
+      border: 'border-amber-500/50',
+      badge: 'Brinquedos Guardados',
+      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+    }
+  }
+  if (lower.includes('dente')) {
+    return {
+      emoji: '🪥',
+      color: 'from-cyan-600/30 to-sky-600/20',
+      border: 'border-cyan-500/50',
+      badge: 'Dentinhos Limpos',
+      badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40',
+    }
+  }
+  if (lower.includes('banho')) {
+    return {
+      emoji: '🚿',
+      color: 'from-teal-600/30 to-emerald-600/20',
+      border: 'border-teal-500/50',
+      badge: 'Banho sem Enrolar',
+      badgeColor: 'bg-teal-950/80 text-teal-300 border-teal-500/40',
+    }
+  }
+  if (lower.includes('frut') || lower.includes('salad') || lower.includes('comer') || lower.includes('mesa')) {
+    return {
+      emoji: '🥦',
+      color: 'from-emerald-600/30 to-green-600/20',
+      border: 'border-emerald-500/50',
+      badge: 'Comida Saudável',
+      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+    }
+  }
+  if (lower.includes('desenh') || lower.includes('escola') || lower.includes('leitur') || lower.includes('dever') || lower.includes('prof')) {
+    return {
+      emoji: '🎨',
+      color: 'from-purple-600/30 to-pink-600/20',
+      border: 'border-purple-500/50',
+      badge: 'Desenho & Escola',
+      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-500/40',
+    }
+  }
+  if (lower.includes('água') || lower.includes('agua')) {
+    return {
+      emoji: '💧',
+      color: 'from-sky-600/30 to-blue-600/20',
+      border: 'border-sky-500/50',
+      badge: 'Bebeu Água',
+      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-500/40',
+    }
+  }
+  if (lower.includes('dormir')) {
+    return {
+      emoji: '🌙',
+      color: 'from-indigo-600/30 to-purple-600/20',
+      border: 'border-indigo-500/50',
+      badge: 'Dormir Cedo',
+      badgeColor: 'bg-indigo-950/80 text-indigo-300 border-indigo-500/40',
+    }
+  }
+  if (lower.includes('pet') || lower.includes('bich') || lower.includes('cão') || lower.includes('gato')) {
+    return {
+      emoji: '🐶',
+      color: 'from-yellow-600/30 to-amber-600/20',
+      border: 'border-yellow-500/50',
+      badge: 'Amigo dos Bichinhos',
+      badgeColor: 'bg-yellow-950/80 text-yellow-300 border-yellow-500/40',
+    }
+  }
+  if (lower.includes('ajudar') || lower.includes('família') || lower.includes('casa')) {
+    return {
+      emoji: '🧹',
+      color: 'from-pink-600/30 to-rose-600/20',
+      border: 'border-pink-500/50',
+      badge: 'Ajudou em Casa',
+      badgeColor: 'bg-pink-950/80 text-pink-300 border-pink-500/40',
+    }
+  }
+  return {
+    emoji: '⭐',
+    color: 'from-amber-600/30 to-yellow-600/20',
+    border: 'border-amber-500/50',
+    badge: 'Super Missão',
+    badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+  }
+}
+
 const AVATARS: { id: KidAvatar; name: string; emoji: string; color: string }[] = [
   { id: 'warrior', name: 'Guerreiro Gamer', emoji: '⚔️', color: 'from-amber-500 to-orange-600' },
   { id: 'robot', name: 'Robô Cyber', emoji: '🤖', color: 'from-cyan-500 to-blue-600' },
@@ -349,52 +450,54 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
 
         <div className="grid grid-cols-1 gap-2.5">
           {rewardTasks.map((task) => {
+            const visual = getTaskVisual(task.title)
             const isPending = pendingTasks.some((p) => p.template_id === task.id)
 
             return (
               <div
                 key={task.id}
-                className={`p-4 rounded-2xl border transition-all ${
+                className={`p-3.5 rounded-3xl border transition-all ${
                   isPending
                     ? 'bg-amber-950/40 border-amber-500/50 shadow-md'
-                    : 'gamer-card border-slate-800 hover:border-gamer-purple/60 shadow-md'
+                    : `bg-gradient-to-r ${visual.color} border-slate-800/90 hover:${visual.border} shadow-lg`
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-3 rounded-2xl border ${
-                        isPending
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                          : 'bg-slate-800 text-emerald-400 border-slate-700'
-                      }`}
-                    >
-                      <DynamicIcon name={task.icon} className="w-6 h-6" />
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Big Visual Drawing/Emoji Badge for 5-Year-Old */}
+                    <div className="w-13 h-13 p-2 rounded-2xl bg-slate-950/90 border-2 border-white/10 flex items-center justify-center text-3xl shadow-inner shrink-0 active:scale-95 transition-transform">
+                      <span className="leading-none">{visual.emoji}</span>
                     </div>
 
-                    <div>
-                      <h4 className="font-bold text-sm text-white">{task.title}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                          +{task.minutes_reward} Minutos de Game!
+                    <div className="min-w-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${visual.badgeColor} uppercase tracking-wider inline-block leading-tight`}>
+                        {visual.badge}
+                      </span>
+                      <h4 className="font-bold text-sm text-white mt-0.5 leading-snug truncate">
+                        {task.title}
+                      </h4>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] font-mono font-extrabold text-emerald-400 bg-emerald-950/90 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                          +{task.minutes_reward} Minutos 🎮
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <div>
+                  {/* Big Touch-Friendly Button for 5-year-old fingers */}
+                  <div className="shrink-0">
                     {isPending ? (
-                      <span className="px-3 py-2 rounded-xl bg-amber-950 text-amber-300 border border-amber-500/60 text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Aguardando Pais...</span>
-                      </span>
+                      <div className="px-2.5 py-2 rounded-2xl bg-amber-950 text-amber-300 border border-amber-500/60 text-xs font-bold flex flex-col items-center gap-0.5 animate-pulse text-center">
+                        <Clock className="w-4 h-4 text-amber-400" />
+                        <span className="text-[9px] font-mono leading-none">Aguardando</span>
+                      </div>
                     ) : (
                       <button
                         onClick={() => handleTaskClick(task)}
-                        className="py-2.5 px-3.5 rounded-xl bg-gamer-purple hover:bg-purple-600 text-white font-bold text-xs shadow-glow-purple active:scale-95 transition-all flex items-center gap-1.5"
+                        className="py-3 px-3.5 rounded-2xl bg-gradient-to-r from-gamer-purple to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-gamer font-bold text-xs shadow-glow-purple active:scale-95 transition-all flex items-center gap-1.5 border border-purple-400/40"
                       >
-                        <span>Marcar como Feito! 🚀</span>
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>FIZ ESSA! 🚀</span>
                       </button>
                     )}
                   </div>

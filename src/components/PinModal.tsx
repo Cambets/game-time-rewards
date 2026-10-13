@@ -139,7 +139,7 @@ export const PinModal: React.FC<PinModalProps> = ({
         </div>
 
         <p className="text-[10px] text-slate-500 font-mono">
-          PIN padrão inicial: 1234
+          PIN padrão inicial: 1010
         </p>
       </div>
     </div>

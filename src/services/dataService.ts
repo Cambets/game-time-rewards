@@ -1,81 +1,57 @@
 import { getSupabaseClient, getStoredSupabaseConfig } from '../lib/supabase'
 import { Profile, TaskTemplate, BalanceLog, ActiveGameSession, PendingTask, KidAvatar, ParentAuthor } from '../types'
 
-const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v3'
-const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v3'
-const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v3'
-const LOCAL_STORAGE_KEY_SESSION = 'gametime_local_session_v3'
-const LOCAL_STORAGE_KEY_PENDING = 'gametime_local_pending_v3'
-const LOCAL_STORAGE_KEY_PIN = 'gametime_parent_pin_v3'
+const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v4'
+const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v4'
+const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v4'
+const LOCAL_STORAGE_KEY_SESSION = 'gametime_local_session_v4'
+const LOCAL_STORAGE_KEY_PENDING = 'gametime_local_pending_v4'
+const LOCAL_STORAGE_KEY_PIN = 'gametime_parent_pin_v4'
 
-// Initial seed data: Only Gael
+// Initial seed data: Gael starts with 0 minutes and 0 XP
 const INITIAL_PROFILES: Profile[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     name: 'Gael',
-    current_balance_minutes: 45,
+    current_balance_minutes: 0,
     daily_max_minutes: 90,
     avatar_id: 'warrior',
-    xp: 140,
+    xp: 0,
+    roulette_spins: 0,
     updated_at: new Date().toISOString()
   }
 ]
 
 const INITIAL_TEMPLATES: TaskTemplate[] = [
-  // Rotina & Casa
+  // Rotina Diária da Criança (5 anos)
   { id: 't1', title: 'Arrumar a Cama', minutes_reward: 10, icon: 'Bed', category: 'rotina', active: true },
-  { id: 't2', title: 'Banho sem enrolar', minutes_reward: 10, icon: 'ShowerHead', category: 'rotina', active: true },
-  { id: 't3', title: 'Escovar os Dentes', minutes_reward: 5, icon: 'Sparkles', category: 'rotina', active: true },
+  { id: 't2', title: 'Escovar os Dentinhos', minutes_reward: 5, icon: 'Sparkles', category: 'rotina', active: true },
+  { id: 't3', title: 'Tomar Banho sem Enrolar', minutes_reward: 10, icon: 'ShowerHead', category: 'rotina', active: true },
   { id: 't4', title: 'Dormir no Horário', minutes_reward: 15, icon: 'Moon', category: 'rotina', active: true },
   
-  { id: 't5', title: 'Guardar Brinquedos', minutes_reward: 10, icon: 'Boxes', category: 'casa', active: true },
-  { id: 't6', title: 'Ajudar na Mesa', minutes_reward: 10, icon: 'Utensils', category: 'casa', active: true },
-  { id: 't7', title: 'Alimentar o Pet', minutes_reward: 10, icon: 'Dog', category: 'casa', active: true },
-  { id: 't8', title: 'Organizar o Quarto', minutes_reward: 15, icon: 'Home', category: 'casa', active: true },
+  // Casa & Organização
+  { id: 't5', title: 'Guardar os Brinquedos', minutes_reward: 10, icon: 'Boxes', category: 'casa', active: true },
+  { id: 't6', title: 'Comer Frutinha ou Salada', minutes_reward: 10, icon: 'Utensils', category: 'casa', active: true },
+  { id: 't7', title: 'Beber Água e se Cuidar', minutes_reward: 5, icon: 'Zap', category: 'casa', active: true },
+  { id: 't8', title: 'Ajudar o Papai e a Mamãe', minutes_reward: 10, icon: 'Home', category: 'casa', active: true },
+  { id: 't9', title: 'Carinho com o Pet', minutes_reward: 5, icon: 'Dog', category: 'casa', active: true },
 
-  // Foco & Estudos
-  { id: 't9', title: 'Dever de Casa / Leitura', minutes_reward: 15, icon: 'BookOpen', category: 'escola', active: true },
-  { id: 't10', title: 'Mochila Organizada', minutes_reward: 10, icon: 'Backpack', category: 'escola', active: true },
-  { id: 't11', title: 'Nota 10 / Elogio na Escola', minutes_reward: 30, icon: 'Trophy', category: 'escola', active: true },
+  // Aprendizado & Escola
+  { id: 't10', title: 'Desenhar ou Lição da Escola', minutes_reward: 15, icon: 'BookOpen', category: 'escola', active: true },
+  { id: 't11', title: 'Elogio da Professora', minutes_reward: 20, icon: 'Trophy', category: 'escola', active: true },
 
   // Alertas / Penalidades
-  { id: 't12', title: 'Desobediência / Birra', minutes_reward: -15, icon: 'AlertTriangle', category: 'penalidade', active: true },
-  { id: 't13', title: 'Enrolar / Reclamar', minutes_reward: -10, icon: 'ClockAlert', category: 'penalidade', active: true },
-  { id: 't14', title: 'Não Desligar na Hora', minutes_reward: -30, icon: 'Skull', category: 'penalidade', active: true },
-  { id: 't15', title: 'Falar Mal / Gritar', minutes_reward: -15, icon: 'Flame', category: 'penalidade', active: true },
+  { id: 't12', title: 'Birra ou Choradeira', minutes_reward: -10, icon: 'AlertTriangle', category: 'penalidade', active: true },
+  { id: 't13', title: 'Desobedecer Papai ou Mamãe', minutes_reward: -15, icon: 'ClockAlert', category: 'penalidade', active: true },
+  { id: 't14', title: 'Não Desligar na Hora', minutes_reward: -20, icon: 'Skull', category: 'penalidade', active: true },
+  { id: 't15', title: 'Gritar ou Bater', minutes_reward: -15, icon: 'Flame', category: 'penalidade', active: true },
 
   // Resgate / Jogo
   { id: 't16', title: '🎮 Sessão Rápida (-15m)', minutes_reward: -15, icon: 'Zap', category: 'resgate', active: true },
   { id: 't17', title: '🎮 Iniciar Jogo (-30m)', minutes_reward: -30, icon: 'Gamepad2', category: 'resgate', active: true },
-  { id: 't18', title: '🎮 Sessão Longa (-60m)', minutes_reward: -60, icon: 'Flame', category: 'resgate', active: true },
 ]
 
-const INITIAL_LOGS: BalanceLog[] = [
-  {
-    id: 'l1',
-    profile_id: '11111111-1111-1111-1111-111111111111',
-    task_title: 'Arrumar a Cama',
-    minutes_applied: 10,
-    recorded_by: 'Mamãe',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-  },
-  {
-    id: 'l2',
-    profile_id: '11111111-1111-1111-1111-111111111111',
-    task_title: 'Dever de Casa / Leitura',
-    minutes_applied: 15,
-    recorded_by: 'Papai',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-  },
-  {
-    id: 'l3',
-    profile_id: '11111111-1111-1111-1111-111111111111',
-    task_title: 'Guardar Brinquedos',
-    minutes_applied: 10,
-    recorded_by: 'Mamãe',
-    created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString()
-  }
-]
+const INITIAL_LOGS: BalanceLog[] = []
 
 // Local Storage helpers
 const getLocalData = <T>(key: string, defaultVal: T): T => {
@@ -107,9 +83,9 @@ export const dataService = {
     return isConfigured ? 'supabase' : 'local'
   },
 
-  // --- PIN DE SEGURANÇA DOS PAIS ---
+  // --- PIN DE SEGURANÇA DOS PAIS (1010) ---
   getParentPin(): string {
-    return localStorage.getItem(LOCAL_STORAGE_KEY_PIN) || '1234'
+    return localStorage.getItem(LOCAL_STORAGE_KEY_PIN) || '1010'
   },
 
   verifyParentPin(inputPin: string): boolean {
@@ -311,6 +287,44 @@ export const dataService = {
     })
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
     return res
+  },
+
+  async resetGaelProgress(profileId: string): Promise<Profile> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            current_balance_minutes: 0,
+            xp: 0,
+            roulette_spins: 0,
+            last_praise: null,
+            last_praise_author: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profileId)
+        await supabase.from('balance_logs').delete().eq('profile_id', profileId)
+        await supabase.from('pending_tasks').delete().eq('profile_id', profileId)
+      } catch (err) {
+        console.warn('Supabase resetGaelProgress failed:', err)
+      }
+    }
+
+    const resetProfile: Profile = {
+      id: profileId,
+      name: 'Gael',
+      current_balance_minutes: 0,
+      daily_max_minutes: 90,
+      avatar_id: 'warrior',
+      xp: 0,
+      roulette_spins: 0,
+      updated_at: new Date().toISOString()
+    }
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, [resetProfile])
+    setLocalData(LOCAL_STORAGE_KEY_LOGS, [])
+    setLocalData(LOCAL_STORAGE_KEY_PENDING, [])
+    return resetProfile
   },
 
   async savePraiseMessage(profileId: string, praise: string, author: ParentAuthor): Promise<void> {

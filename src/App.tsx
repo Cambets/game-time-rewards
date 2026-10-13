@@ -453,6 +453,26 @@ export function App() {
     }
   }
 
+  // Reset Gael progress to clean start (0 min, 0 XP, 0 trophies)
+  const handleResetGaelProgress = async () => {
+    if (!activeProfile) return
+    if (!window.confirm('Deseja zerar a conta do Gael para começar do zero (0 minutos e 0 troféus)?')) {
+      return
+    }
+
+    try {
+      const reset = await dataService.resetGaelProgress(activeProfile.id)
+      setActiveProfile(reset)
+      setLogs([])
+      setPendingTasks([])
+      sounds.playReward()
+      addToast('Conta do Gael reiniciada!', 'Saldo, XP e troféus começam agora do zero!', 'info')
+      loadData()
+    } catch (e) {
+      console.error('Reset failed:', e)
+    }
+  }
+
   // Create new task template
   const handleCreateTemplate = async (templateData: {
     title: string
@@ -593,6 +613,16 @@ export function App() {
                       </span>
                     </div>
                     <span className="text-gamer-purple-light font-bold">Abrir &rarr;</span>
+                  </button>
+                </div>
+
+                {/* Reset Progress to Clean Start (0 min, 0 XP) */}
+                <div className="pt-1 text-center">
+                  <button
+                    onClick={handleResetGaelProgress}
+                    className="text-[11px] text-slate-500 hover:text-rose-400 transition-colors font-medium underline py-1"
+                  >
+                    🔄 Zerar saldo e XP do Gael (Começar do Zero)
                   </button>
                 </div>
               </>

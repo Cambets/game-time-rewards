@@ -106,8 +106,8 @@ alter publication supabase_realtime add table public.pending_tasks;
 
 insert into public.profiles (id, name, current_balance_minutes, daily_max_minutes, avatar_id, xp)
 values 
-  ('11111111-1111-1111-1111-111111111111', 'Gael', 45, 90, 'warrior', 140)
-on conflict (id) do update set name = 'Gael';
+  ('11111111-1111-1111-1111-111111111111', 'Gael', 0, 90, 'warrior', 0)
+on conflict (id) do update set current_balance_minutes = 0, xp = 0;
 
 -- Task Templates
 insert into public.task_templates (title, minutes_reward, icon, category, active)

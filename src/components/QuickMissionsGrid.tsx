@@ -12,6 +12,26 @@ interface QuickMissionsGridProps {
 
 type FilterCategory = 'all' | 'rotina' | 'casa' | 'escola' | 'penalidade'
 
+const getTaskEmoji = (title: string, category: string) => {
+  const lower = title.toLowerCase()
+  if (lower.includes('cama')) return '🛏️'
+  if (lower.includes('brinquedo')) return '🧸'
+  if (lower.includes('dente')) return '🪥'
+  if (lower.includes('banho')) return '🚿'
+  if (lower.includes('frut') || lower.includes('salad') || lower.includes('comer')) return '🥦'
+  if (lower.includes('desenh') || lower.includes('escola') || lower.includes('leitur')) return '🎨'
+  if (lower.includes('água') || lower.includes('agua')) return '💧'
+  if (lower.includes('dormir')) return '🌙'
+  if (lower.includes('pet') || lower.includes('bich') || lower.includes('cão')) return '🐶'
+  if (lower.includes('ajudar') || lower.includes('família')) return '🧹'
+  if (lower.includes('birra') || lower.includes('choro')) return '😢'
+  if (lower.includes('desobedecer')) return '🛑'
+  if (lower.includes('desligar')) return '🎮'
+  if (lower.includes('gritar') || lower.includes('bater')) return '⚠️'
+  if (category === 'penalidade') return '⚠️'
+  return '⭐'
+}
+
 export const QuickMissionsGrid: React.FC<QuickMissionsGridProps> = ({
   tasks,
   onExecuteTask,
@@ -23,8 +43,8 @@ export const QuickMissionsGrid: React.FC<QuickMissionsGridProps> = ({
   const filterTabs: { id: FilterCategory; label: string; icon: React.ReactNode }[] = [
     { id: 'all', label: 'Todas', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: 'rotina', label: 'Rotina & Banho', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    { id: 'casa', label: 'Casa', icon: <Home className="w-3.5 h-3.5" /> },
-    { id: 'escola', label: 'Estudos', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'casa', label: 'Casa & Brinquedos', icon: <Home className="w-3.5 h-3.5" /> },
+    { id: 'escola', label: 'Escola & Desenho', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'penalidade', label: '⚠️ Alertas', icon: <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> },
   ]
 
@@ -106,8 +126,8 @@ export const QuickMissionsGrid: React.FC<QuickMissionsGridProps> = ({
                   className="group relative text-left p-3.5 rounded-2xl gamer-card hover:bg-slate-800/80 border border-slate-800 hover:border-gamer-green/60 shadow-md gamer-card-interactive flex items-center justify-between gap-3 active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-800 group-hover:bg-emerald-950/60 text-emerald-400 border border-slate-700/80 group-hover:border-emerald-500/40 shadow-sm shrink-0 transition-colors">
-                      <DynamicIcon name={task.icon} className="w-5 h-5 text-gamer-green group-hover:scale-110 transition-transform" />
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-emerald-950/60 border border-slate-700/80 group-hover:border-emerald-500/40 shadow-sm shrink-0 transition-colors flex items-center justify-center text-xl">
+                      <span>{getTaskEmoji(task.title, task.category)}</span>
                     </div>
                     <div>
                       <h4 className="font-semibold text-xs md:text-sm text-slate-100 group-hover:text-white leading-snug">
@@ -149,8 +169,8 @@ export const QuickMissionsGrid: React.FC<QuickMissionsGridProps> = ({
                   className="group relative text-left p-3.5 rounded-2xl bg-gradient-to-r from-rose-950/40 to-slate-900 border border-rose-900/50 hover:border-rose-500/70 hover:bg-rose-950/60 shadow-md gamer-card-interactive flex items-center justify-between gap-3 active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-rose-950/60 text-rose-400 border border-rose-800/60 group-hover:border-rose-500/60 shadow-sm shrink-0 transition-colors">
-                      <DynamicIcon name={task.icon} className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />
+                    <div className="w-10 h-10 rounded-xl bg-rose-950/60 border border-rose-800/60 group-hover:border-rose-500/60 shadow-sm shrink-0 transition-colors flex items-center justify-center text-xl">
+                      <span>{getTaskEmoji(task.title, task.category)}</span>
                     </div>
                     <div>
                       <h4 className="font-semibold text-xs md:text-sm text-rose-100 group-hover:text-white leading-snug">
