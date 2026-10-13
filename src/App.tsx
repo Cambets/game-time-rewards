@@ -206,7 +206,7 @@ export function App() {
   }
 
   // Parent approves Gael's completed task
-  const handleApproveTask = async (task: PendingTask) => {
+  const handleApproveTask = async (task: PendingTask, praise?: string) => {
     if (soundEnabled) {
       sounds.playReward()
       triggerConfetti()
@@ -217,13 +217,37 @@ export function App() {
       setPendingTasks((prev) => prev.filter((p) => p.id !== task.id))
       addToast(
         `Missão "${task.task_title}" aprovada! (+${task.minutes_reward}m)`,
-        `Creditado por ${currentAuthor} para o Gael!`,
+        praise ? `${praise} — Por ${currentAuthor}` : `Creditado por ${currentAuthor} para o Gael!`,
         'success'
       )
       loadData()
     } catch (e) {
       console.error('Approve failed:', e)
       addToast('Erro ao aprovar missão', undefined, 'penalty')
+    }
+  }
+
+  // Handle prize won in Lucky Wheel
+  const handleWinRoulettePrize = async (minutes: number, xp: number, prizeTitle: string) => {
+    if (!activeProfile) return
+
+    try {
+      if (minutes > 0) {
+        await dataService.addBalanceLog({
+          profile_id: activeProfile.id,
+          task_title: `🎰 Roleta da Sorte (${prizeTitle})`,
+          minutes_applied: minutes,
+          recorded_by: currentAuthor,
+        })
+      }
+      addToast(
+        `Prêmio da Roleta: ${prizeTitle}!`,
+        minutes > 0 ? `+${minutes} min adicionados à bateria!` : `+${xp} XP de Nível!`,
+        'success'
+      )
+      loadData()
+    } catch (e) {
+      console.error('Failed to claim roulette prize:', e)
     }
   }
 
@@ -470,6 +494,7 @@ export function App() {
                 onStartGameSession={handleStartSessionTimer}
                 onMarkTaskDone={handleMarkTaskDone}
                 onChangeAvatar={handleChangeAvatar}
+                onWinRoulettePrize={handleWinRoulettePrize}
               />
             ) : (
               /* =========================================

@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { Profile, TaskTemplate, PendingTask, KidAvatar } from '../types'
 import { DynamicIcon } from './DynamicIcon'
+import { LuckyWheelModal } from './LuckyWheelModal'
+import { AchievementsModal } from './AchievementsModal'
+import { PixelPetCompanion } from './PixelPetCompanion'
 import {
   Gamepad2,
   Trophy,
@@ -16,7 +19,7 @@ import {
   Rocket,
   Shield,
   Zap,
-  ArrowRight
+  Gift
 } from 'lucide-react'
 import { sounds } from '../lib/sound'
 import confetti from 'canvas-confetti'
@@ -28,14 +31,15 @@ interface GaelDashboardProps {
   onStartGameSession: (minutes: number) => void
   onMarkTaskDone: (task: TaskTemplate) => void
   onChangeAvatar: (avatar: KidAvatar) => void
+  onWinRoulettePrize: (minutes: number, xp: number, prizeTitle: string) => void
 }
 
-const AVATARS: { id: KidAvatar; name: string; emoji: string; icon: React.ReactNode; color: string }[] = [
-  { id: 'warrior', name: 'Guerreiro Gamer', emoji: '⚔️', icon: <Swords className="w-6 h-6" />, color: 'from-amber-500 to-orange-600' },
-  { id: 'robot', name: 'Robô Cyber', emoji: '🤖', icon: <Bot className="w-6 h-6" />, color: 'from-cyan-500 to-blue-600' },
-  { id: 'mage', name: 'Mago Pixel', emoji: '🧙', icon: <Wand2 className="w-6 h-6" />, color: 'from-purple-500 to-pink-600' },
-  { id: 'racer', name: 'Piloto Speed', emoji: '🏎️', icon: <Car className="w-6 h-6" />, color: 'from-emerald-500 to-teal-600' },
-  { id: 'astronaut', name: 'Cosmo Gamer', emoji: '🚀', icon: <Rocket className="w-6 h-6" />, color: 'from-indigo-500 to-purple-700' },
+const AVATARS: { id: KidAvatar; name: string; emoji: string; color: string }[] = [
+  { id: 'warrior', name: 'Guerreiro Gamer', emoji: '⚔️', color: 'from-amber-500 to-orange-600' },
+  { id: 'robot', name: 'Robô Cyber', emoji: '🤖', color: 'from-cyan-500 to-blue-600' },
+  { id: 'mage', name: 'Mago Pixel', emoji: '🧙', color: 'from-purple-500 to-pink-600' },
+  { id: 'racer', name: 'Piloto Speed', emoji: '🏎️', color: 'from-emerald-500 to-teal-600' },
+  { id: 'astronaut', name: 'Cosmo Gamer', emoji: '🚀', color: 'from-indigo-500 to-purple-700' },
 ]
 
 export const GaelDashboard: React.FC<GaelDashboardProps> = ({
@@ -45,9 +49,12 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   onStartGameSession,
   onMarkTaskDone,
   onChangeAvatar,
+  onWinRoulettePrize,
 }) => {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [showStartModal, setShowStartModal] = useState(false)
+  const [showLuckyWheel, setShowLuckyWheel] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
   const [chosenMinutes, setChosenMinutes] = useState<number>(30)
 
   const balance = profile.current_balance_minutes
@@ -55,7 +62,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   const currentAvatar = AVATARS.find((a) => a.id === currentAvatarId) || AVATARS[0]
 
   // XP & Level calculations
-  const totalXp = profile.xp || 120
+  const totalXp = profile.xp || 140
   const level = Math.floor(totalXp / 50) + 1
   const xpCurrentLevel = totalXp % 50
   const xpNextLevel = 50
@@ -70,7 +77,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   ]
   const currentRank = rankTitles[Math.min(level - 1, rankTitles.length - 1)]
 
-  // Only rewards are visible to Gael in Kid Mode (penalties are handled by parents)
+  // Only rewards are visible to Gael in Kid Mode
   const rewardTasks = tasks.filter((t) => t.category !== 'resgate' && t.minutes_reward > 0)
 
   const handleTaskClick = (task: TaskTemplate) => {
@@ -91,8 +98,8 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-4 pb-12 animate-fade-in">
-      {/* 1. Header do Jogador (Gael Profile & Avatar) */}
+    <div className="space-y-4 pb-24 animate-fade-in relative">
+      {/* 1. Header do Jogador (Gael Profile, Avatar, XP) */}
       <div className="gamer-card rounded-3xl p-4 border border-surface-border/80 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-gamer-purple/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -149,6 +156,41 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
             />
           </div>
         </div>
+      </div>
+
+      {/* Quick Interactive Mini-Features: Roleta da Sorte & Troféus */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {/* Roleta da Sorte Button */}
+        <button
+          onClick={() => setShowLuckyWheel(true)}
+          className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-orange-950/70 border border-amber-500/50 hover:border-amber-400 shadow-glow-amber text-left flex items-center gap-2.5 active:scale-95 transition-all group"
+        >
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 group-hover:rotate-45 transition-transform">
+            <Gift className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h4 className="font-gamer font-bold text-xs text-amber-300 leading-tight">
+              ROLETA DA SORTE 🎰
+            </h4>
+            <span className="text-[10px] text-slate-400">Girar e Ganhar!</span>
+          </div>
+        </button>
+
+        {/* Mural de Troféus Button */}
+        <button
+          onClick={() => setShowAchievements(true)}
+          className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/50 hover:border-purple-400 shadow-glow-purple text-left flex items-center gap-2.5 active:scale-95 transition-all group"
+        >
+          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h4 className="font-gamer font-bold text-xs text-purple-300 leading-tight">
+              MEUS TROFÉUS 🏆
+            </h4>
+            <span className="text-[10px] text-slate-400">Mural Gamer</span>
+          </div>
+        </button>
       </div>
 
       {/* 2. Mostrador Gigante de Minutos (Bateria de Game) */}
@@ -269,6 +311,9 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         </div>
       </div>
 
+      {/* Floating Pixel Pet Companion */}
+      <PixelPetCompanion />
+
       {/* Avatar Picker Modal */}
       {showAvatarPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
@@ -369,6 +414,21 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Lucky Wheel Modal */}
+      <LuckyWheelModal
+        isOpen={showLuckyWheel}
+        onClose={() => setShowLuckyWheel(false)}
+        onWinPrize={onWinRoulettePrize}
+      />
+
+      {/* Achievements Showcase Modal */}
+      <AchievementsModal
+        isOpen={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        userXp={totalXp}
+        totalMinutes={balance}
+      />
     </div>
   )
 }

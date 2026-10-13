@@ -1,4 +1,4 @@
-// Web Audio API NES 8-bit Mario sound synthesizer, Game Over & alarm system
+// Web Audio API NES 8-bit Mario sound synthesizer, Game Over, Star Power & Wheel sounds
 
 class SoundManager {
   private audioCtx: AudioContext | null = null
@@ -92,6 +92,112 @@ class SoundManager {
     }
   }
 
+  // ⭐ SUPER MARIO STAR POWER (Estrela da Invencibilidade / Roleta Bônus Épico!)
+  playStarPower() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      // Notas icônicas aceleradas da Estrela do Mario
+      const starNotes = [
+        392.00, 392.00, 392.00, 293.66, 392.00, 293.66, 392.00, 293.66, 
+        440.00, 440.00, 440.00, 329.63, 440.00, 329.63, 440.00, 329.63,
+        493.88, 523.25, 587.33, 659.25, 783.99
+      ]
+
+      starNotes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'square'
+        const start = now + idx * 0.065
+        osc.frequency.setValueAtTime(freq, start)
+
+        gain.gain.setValueAtTime(0.15, start)
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.06)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(start)
+        osc.stop(start + 0.06)
+      })
+
+      this.vibrate([30, 20, 30, 20, 30, 20, 80])
+    } catch (e) {
+      console.warn('Audio playStarPower error:', e)
+    }
+  }
+
+  // 🎡 TICK DE ROLETA (Clique de giro mecânico)
+  playWheelTick() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(1400, now)
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.03)
+
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.03)
+
+      if (navigator.vibrate) navigator.vibrate(15)
+    } catch {
+      // Ignored
+    }
+  }
+
+  // 🤖 PIXEL PET COMPANION REACTION (Sons fofos ao tocar no mascote)
+  playPetReaction() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const freqs = [
+        [587.33, 880],
+        [659.25, 987.77],
+        [783.99, 1174.66],
+        [523.25, 659.25, 783.99, 1046.50]
+      ]
+      const chosen = freqs[Math.floor(Math.random() * freqs.length)]
+
+      chosen.forEach((f, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sine'
+        const start = now + idx * 0.06
+        osc.frequency.setValueAtTime(f, start)
+
+        gain.gain.setValueAtTime(0.18, start)
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(start)
+        osc.stop(start + 0.08)
+      })
+
+      this.vibrate([30, 20, 30])
+    } catch {
+      // Ignored
+    }
+  }
+
   // 💀 SUPER MARIO MISS / LOST LIFE SOUND (- Minutos / Penalidade)
   playPenalty() {
     try {
@@ -171,7 +277,6 @@ class SoundManager {
   }
 
   // 🚫 ARCADE GAME OVER TUNE (Tempo Esgotado / Bloqueio do Gael)
-  // Jingle retrô dramático de Game Over
   playGameOver() {
     try {
       const ctx = this.getAudioContext()
@@ -183,7 +288,7 @@ class SoundManager {
         { f: 329.63, start: 0.24, dur: 0.22 }, // E4
         { f: 293.66, start: 0.48, dur: 0.22 }, // D4
         { f: 261.63, start: 0.72, dur: 0.45 }, // C4
-        { f: 196.00, start: 1.20, dur: 0.65 }, // G3 (grave dramático)
+        { f: 196.00, start: 1.20, dur: 0.65 }, // G3
       ]
 
       gameOverNotes.forEach((item) => {
