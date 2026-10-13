@@ -144,7 +144,11 @@ export function App() {
     const isReward = task.minutes_reward > 0
     if (soundEnabled) {
       if (isReward) {
-        sounds.playReward()
+        if (task.minutes_reward >= 30) {
+          sounds.play1Up()
+        } else {
+          sounds.playReward()
+        }
         triggerConfetti()
       } else {
         sounds.playPenalty()
@@ -272,7 +276,11 @@ export function App() {
     const isReward = minutes > 0
     if (soundEnabled) {
       if (isReward) {
-        sounds.playReward()
+        if (minutes >= 30) {
+          sounds.play1Up()
+        } else {
+          sounds.playReward()
+        }
         triggerConfetti()
       } else {
         sounds.playPenalty()
