@@ -1,4 +1,4 @@
-// Web Audio API NES 8-bit Mario sound synthesizer & alarm system
+// Web Audio API NES 8-bit Mario sound synthesizer, Game Over & alarm system
 
 class SoundManager {
   private audioCtx: AudioContext | null = null
@@ -21,26 +21,19 @@ class SoundManager {
   }
 
   // 🪙 SUPER MARIO COIN SOUND (+ Minutos / Recompensa)
-  // O som lendário de pegar moeda no NES: B5 (987.77Hz) seguido rapidamente de E6 (1318.51Hz)
   playReward() {
     try {
       const ctx = this.getAudioContext()
       if (!ctx) return
 
       const now = ctx.currentTime
-
-      // Canal 1: Onda Quadrada (Square Wave) típica do chip NES 2A03
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
 
       osc.type = 'square'
+      osc.frequency.setValueAtTime(987.77, now) // B5
+      osc.frequency.setValueAtTime(1318.51, now + 0.075) // E6
 
-      // Nota 1: B5 (987.77 Hz) toca por ~0.075s
-      osc.frequency.setValueAtTime(987.77, now)
-      // Nota 2: E6 (1318.51 Hz) sobe imediatamente e ressoa por ~0.35s
-      osc.frequency.setValueAtTime(1318.51, now + 0.075)
-
-      // Envelope de Volume NES
       gain.gain.setValueAtTime(0.22, now)
       gain.gain.setValueAtTime(0.22, now + 0.075)
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
@@ -58,7 +51,6 @@ class SoundManager {
   }
 
   // 🍄 SUPER MARIO 1-UP MUSHROOM (Bônus Especiais / Nível UP)
-  // Notas clássicas: E5, G5, E6, C6, D6, G6
   play1Up() {
     try {
       const ctx = this.getAudioContext()
@@ -101,16 +93,12 @@ class SoundManager {
   }
 
   // 💀 SUPER MARIO MISS / LOST LIFE SOUND (- Minutos / Penalidade)
-  // O clássico jingle do NES quando o Mario perde uma vida / cai no buraco:
-  // Notas: B4 -> F5 -> F5 -> F5 -> E5 -> D5 -> C5
   playPenalty() {
     try {
       const ctx = this.getAudioContext()
       if (!ctx) return
 
       const now = ctx.currentTime
-
-      // Sequência exata de notas da perda de vida do Super Mario Bros
       const deathNotes = [
         { f: 493.88, start: 0.00, dur: 0.08 }, // B4
         { f: 698.46, start: 0.10, dur: 0.08 }, // F5
@@ -148,7 +136,6 @@ class SoundManager {
   }
 
   // 🎮 SUPER MARIO POWER-UP (Iniciar Sessão de Jogo)
-  // Jingle do cogumelo do Mario ao crescer
   playRedeem() {
     try {
       const ctx = this.getAudioContext()
@@ -180,6 +167,120 @@ class SoundManager {
       this.vibrate([60, 40, 80, 40, 120])
     } catch (e) {
       console.warn('Audio playRedeem error:', e)
+    }
+  }
+
+  // 🚫 ARCADE GAME OVER TUNE (Tempo Esgotado / Bloqueio do Gael)
+  // Jingle retrô dramático de Game Over
+  playGameOver() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const gameOverNotes = [
+        { f: 392.00, start: 0.00, dur: 0.22 }, // G4
+        { f: 329.63, start: 0.24, dur: 0.22 }, // E4
+        { f: 293.66, start: 0.48, dur: 0.22 }, // D4
+        { f: 261.63, start: 0.72, dur: 0.45 }, // C4
+        { f: 196.00, start: 1.20, dur: 0.65 }, // G3 (grave dramático)
+      ]
+
+      gameOverNotes.forEach((item) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sawtooth'
+        const start = now + item.start
+        osc.frequency.setValueAtTime(item.f, start)
+
+        gain.gain.setValueAtTime(0.24, start)
+        gain.gain.exponentialRampToValueAtTime(0.001, start + item.dur)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(start)
+        osc.stop(start + item.dur)
+      })
+
+      this.vibrate([200, 100, 200, 100, 400])
+    } catch (e) {
+      console.warn('Audio playGameOver error:', e)
+    }
+  }
+
+  // ⚠️ 5-MINUTE WARNING CHIME ("Atenção: Salve seu jogo!")
+  playWarningBeep() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const notes = [
+        { f: 1046.50, start: 0.00, dur: 0.12 }, // C6
+        { f: 1318.51, start: 0.15, dur: 0.20 }, // E6
+      ]
+
+      notes.forEach((item) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sine'
+        const start = now + item.start
+        osc.frequency.setValueAtTime(item.f, start)
+
+        gain.gain.setValueAtTime(0.25, start)
+        gain.gain.exponentialRampToValueAtTime(0.001, start + item.dur)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(start)
+        osc.stop(start + item.dur)
+      })
+
+      this.vibrate([100, 80, 100])
+    } catch (e) {
+      console.warn('Audio playWarningBeep error:', e)
+    }
+  }
+
+  // 🏆 TRIUMPHANT LEVEL UP FANFARE
+  playLevelUp() {
+    try {
+      const ctx = this.getAudioContext()
+      if (!ctx) return
+
+      const now = ctx.currentTime
+      const notes = [
+        { f: 523.25, start: 0.00, dur: 0.10 }, // C5
+        { f: 659.25, start: 0.10, dur: 0.10 }, // E5
+        { f: 783.99, start: 0.20, dur: 0.10 }, // G5
+        { f: 1046.50, start: 0.30, dur: 0.35 }, // C6
+      ]
+
+      notes.forEach((item) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'triangle'
+        const start = now + item.start
+        osc.frequency.setValueAtTime(item.f, start)
+
+        gain.gain.setValueAtTime(0.22, start)
+        gain.gain.exponentialRampToValueAtTime(0.001, start + item.dur)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(start)
+        osc.stop(start + item.dur)
+      })
+
+      this.vibrate([50, 30, 50, 30, 120])
+    } catch (e) {
+      console.warn('Audio playLevelUp error:', e)
     }
   }
 
@@ -266,8 +367,8 @@ class SoundManager {
       Notification.permission === 'granted'
     ) {
       try {
-        new Notification(`🚨 TEMPO DE VIDEOGAME ESGOTADO!`, {
-          body: `O tempo de jogo do ${kidName} acabou. Hora de salvar e desligar o console!`,
+        new Notification(`🚨 GAME OVER! TEMPO DO ${kidName.toUpperCase()} ESGOTADO!`, {
+          body: `O tempo de videogame acabou. Desligue o console e venha recarregar as energias!`,
           icon: '/gamepad.svg',
           requireInteraction: true,
         })

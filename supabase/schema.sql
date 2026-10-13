@@ -11,6 +11,8 @@ create table if not exists public.profiles (
   name text not null,
   current_balance_minutes integer not null default 0,
   daily_max_minutes integer not null default 90,
+  avatar_id text not null default 'warrior',
+  xp integer not null default 120,
   avatar_url text,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -32,11 +34,11 @@ create table if not exists public.balance_logs (
   profile_id uuid not null references public.profiles(id) on delete cascade,
   task_title text not null,
   minutes_applied integer not null,
-  recorded_by text not null check (recorded_by in ('Papai', 'Mamãe')),
+  recorded_by text not null check (recorded_by in ('Pai', 'Mãe', 'Papai', 'Mamãe')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. ACTIVE SESSIONS TABLE (Cronômetro em tempo real sincronizado entre Papai e Mamãe)
+-- 4. ACTIVE SESSIONS TABLE (Cronômetro em tempo real sincronizado)
 create table if not exists public.active_sessions (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
@@ -48,16 +50,29 @@ create table if not exists public.active_sessions (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 5. PENDING TASKS TABLE (Missões que o Gael marcou como feitas e aguardam aprovação dos Pais)
+create table if not exists public.pending_tasks (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  template_id text not null,
+  task_title text not null,
+  minutes_reward integer not null,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Create helpful indexes
 create index if not exists idx_balance_logs_profile_id on public.balance_logs(profile_id);
 create index if not exists idx_balance_logs_created_at on public.balance_logs(created_at desc);
 create index if not exists idx_task_templates_category on public.task_templates(category);
+create index if not exists idx_pending_tasks_profile on public.pending_tasks(profile_id, status);
 
 -- Enable Row Level Security (RLS)
 alter table public.profiles enable row level security;
 alter table public.task_templates enable row level security;
 alter table public.balance_logs enable row level security;
 alter table public.active_sessions enable row level security;
+alter table public.pending_tasks enable row level security;
 
 -- Policies for access
 create policy "Allow all operations for profiles" on public.profiles
@@ -72,19 +87,23 @@ create policy "Allow all operations for balance_logs" on public.balance_logs
 create policy "Allow all operations for active_sessions" on public.active_sessions
   for all using (true) with check (true);
 
+create policy "Allow all operations for pending_tasks" on public.pending_tasks
+  for all using (true) with check (true);
+
 -- Enable Supabase Realtime for instant multi-device sync
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.balance_logs;
 alter publication supabase_realtime add table public.task_templates;
 alter publication supabase_realtime add table public.active_sessions;
+alter publication supabase_realtime add table public.pending_tasks;
 
 -- =========================================================
--- SEED DATA (Apenas Gael como filho)
+-- SEED DATA (Gael)
 -- =========================================================
 
-insert into public.profiles (id, name, current_balance_minutes, daily_max_minutes)
+insert into public.profiles (id, name, current_balance_minutes, daily_max_minutes, avatar_id, xp)
 values 
-  ('11111111-1111-1111-1111-111111111111', 'Gael', 45, 90)
+  ('11111111-1111-1111-1111-111111111111', 'Gael', 45, 90, 'warrior', 140)
 on conflict (id) do update set name = 'Gael';
 
 -- Task Templates

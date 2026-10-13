@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import confetti from 'canvas-confetti'
 import { Header } from './components/Header'
+import { ModeSwitchHeader } from './components/ModeSwitchHeader'
+import { GaelDashboard } from './components/GaelDashboard'
+import { GameSessionScreen } from './components/GameSessionScreen'
+import { GameOverScreen } from './components/GameOverScreen'
+import { PendingApprovalsBanner } from './components/PendingApprovalsBanner'
+import { PinModal } from './components/PinModal'
 import { BalanceHeroCard } from './components/BalanceHeroCard'
 import { ActiveTimerCard } from './components/ActiveTimerCard'
 import { QuickMissionsGrid } from './components/QuickMissionsGrid'
@@ -12,11 +18,26 @@ import { AlarmModal } from './components/AlarmModal'
 import { ToastContainer, ToastMessage } from './components/Toast'
 import { dataService } from './services/dataService'
 import { sounds } from './lib/sound'
-import { Profile, TaskTemplate, BalanceLog, ParentAuthor, ActiveGameSession, TaskCategory } from './types'
-import { History, Share2, Gamepad2, BellRing } from 'lucide-react'
+import {
+  Profile,
+  TaskTemplate,
+  BalanceLog,
+  ParentAuthor,
+  ActiveGameSession,
+  TaskCategory,
+  AppMode,
+  PendingTask,
+  KidAvatar
+} from './types'
+import { History, Share2, Gamepad2, Lock } from 'lucide-react'
 
 export function App() {
-  // Author state: defaults to Papai
+  // Current Mode: 'kid' (QG do Gael) or 'parent' (Área dos Pais)
+  const [appMode, setAppMode] = useState<AppMode>(() => {
+    return (localStorage.getItem('gametime_app_mode') as AppMode) || 'kid'
+  })
+
+  // Author state (for parents)
   const [currentAuthor, setCurrentAuthor] = useState<ParentAuthor>(() => {
     return (localStorage.getItem('gametime_author') as ParentAuthor) || 'Papai'
   })
@@ -31,17 +52,20 @@ export function App() {
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
   const [logs, setLogs] = useState<BalanceLog[]>([])
+  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false)
 
-  // Modals & Drawers
+  // Modals & Screen States
+  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false)
+  const [isGameOver, setIsGameOver] = useState<boolean>(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
   const [isCustomAdjustOpen, setIsCustomAdjustOpen] = useState<boolean>(false)
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false)
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState<boolean>(false)
 
-  // Active Game Session Timer (Real-time synchronized)
+  // Active Game Session Timer
   const [activeSession, setActiveSession] = useState<ActiveGameSession | null>(null)
 
   // Toasts
@@ -67,22 +91,23 @@ export function App() {
 
       const [profilesData, templatesData] = await Promise.all([
         dataService.getProfiles(),
-        dataService.getTaskTemplates()
+        dataService.getTaskTemplates(),
       ])
 
       setProfiles(profilesData)
-      // Dedicated to Gael
-      const gaelProfile = profilesData.find(p => p.name === 'Gael') || profilesData[0]
+      const gaelProfile = profilesData.find((p) => p.name === 'Gael') || profilesData[0]
       setActiveProfile(gaelProfile || null)
       setTaskTemplates(templatesData)
 
       if (gaelProfile) {
-        const [logsData, sessionData] = await Promise.all([
+        const [logsData, sessionData, pendingData] = await Promise.all([
           dataService.getBalanceLogs(gaelProfile.id),
-          dataService.getActiveSession(gaelProfile.id)
+          dataService.getActiveSession(gaelProfile.id),
+          dataService.getPendingTasks(gaelProfile.id),
         ])
         setLogs(logsData)
         setActiveSession(sessionData)
+        setPendingTasks(pendingData)
       }
     } catch (err) {
       console.error('Error loading data:', err)
@@ -103,10 +128,30 @@ export function App() {
     }
   }, [loadData])
 
-  // Request browser notification permission on first user click
+  // Request browser notification permission
   useEffect(() => {
     sounds.requestNotificationPermission()
   }, [])
+
+  // Mode change
+  const handleSwitchToKidMode = () => {
+    setAppMode('kid')
+    localStorage.setItem('gametime_app_mode', 'kid')
+    addToast('Bem-vindo ao seu QG, Gael! 🎮', undefined, 'info')
+  }
+
+  const handleRequestParentMode = () => {
+    if (appMode === 'parent') return
+    setIsPinModalOpen(true)
+  }
+
+  const handlePinSuccess = () => {
+    setIsPinModalOpen(false)
+    setAppMode('parent')
+    localStorage.setItem('gametime_app_mode', 'parent')
+    sounds.play1Up()
+    addToast('Área dos Pais Desbloqueada 🔒', 'Acesso administrativo liberado.', 'success')
+  }
 
   // Author change
   const handleSelectAuthor = (author: ParentAuthor) => {
@@ -130,14 +175,78 @@ export function App() {
         particleCount: 50,
         spread: 60,
         origin: { y: 0.8 },
-        colors: ['#8b5cf6', '#10b981', '#06b6d4', '#f59e0b', '#ec4899']
+        colors: ['#8b5cf6', '#10b981', '#06b6d4', '#f59e0b', '#ec4899'],
       })
     } catch {
       // Ignored
     }
   }
 
-  // Execute a 1-touch task from grid
+  // Gael marks task as done (Kid Mode action)
+  const handleMarkTaskDone = async (task: TaskTemplate) => {
+    if (!activeProfile) return
+
+    try {
+      const created = await dataService.createPendingTask({
+        profile_id: activeProfile.id,
+        template_id: task.id,
+        task_title: task.title,
+        minutes_reward: task.minutes_reward,
+      })
+      setPendingTasks((prev) => [created, ...prev])
+
+      addToast(
+        `Missão "${task.title}" marcada! 🚀`,
+        'Avisamos o Papai e a Mamãe para aprovarem seus minutos!',
+        'success'
+      )
+    } catch (e) {
+      console.error('Failed to mark task done:', e)
+    }
+  }
+
+  // Parent approves Gael's completed task
+  const handleApproveTask = async (task: PendingTask) => {
+    if (soundEnabled) {
+      sounds.playReward()
+      triggerConfetti()
+    }
+
+    try {
+      await dataService.approvePendingTask(task.id, currentAuthor)
+      setPendingTasks((prev) => prev.filter((p) => p.id !== task.id))
+      addToast(
+        `Missão "${task.task_title}" aprovada! (+${task.minutes_reward}m)`,
+        `Creditado por ${currentAuthor} para o Gael!`,
+        'success'
+      )
+      loadData()
+    } catch (e) {
+      console.error('Approve failed:', e)
+      addToast('Erro ao aprovar missão', undefined, 'penalty')
+    }
+  }
+
+  // Parent rejects task
+  const handleRejectTask = async (task: PendingTask) => {
+    try {
+      await dataService.rejectPendingTask(task.id)
+      setPendingTasks((prev) => prev.filter((p) => p.id !== task.id))
+      addToast('Missão descartada', undefined, 'info')
+    } catch (e) {
+      console.error('Reject failed:', e)
+    }
+  }
+
+  // Gael changes avatar
+  const handleChangeAvatar = async (avatar: KidAvatar) => {
+    if (!activeProfile) return
+    setActiveProfile((prev) => prev ? { ...prev, avatar_id: avatar } : null)
+    await dataService.updateAvatar(activeProfile.id, avatar)
+    addToast('Avatar atualizado!', undefined, 'success')
+  }
+
+  // Execute a 1-touch task from grid (Parent Mode action)
   const handleExecuteTask = async (task: TaskTemplate) => {
     if (!activeProfile) return
 
@@ -157,13 +266,13 @@ export function App() {
 
     try {
       const newBalance = Math.max(0, activeProfile.current_balance_minutes + task.minutes_reward)
-      setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
+      setActiveProfile((prev) => (prev ? { ...prev, current_balance_minutes: newBalance } : null))
 
       const newLog = await dataService.addBalanceLog({
         profile_id: activeProfile.id,
         task_title: task.title,
         minutes_applied: task.minutes_reward,
-        recorded_by: currentAuthor
+        recorded_by: currentAuthor,
       })
 
       setLogs((prev) => [newLog, ...prev])
@@ -180,43 +289,7 @@ export function App() {
     }
   }
 
-  // Quick redeem gaming session (e.g. -30 min)
-  const handleQuickRedeem = async (minutes: number, title?: string) => {
-    if (!activeProfile) return
-
-    if (soundEnabled) {
-      sounds.playRedeem()
-    }
-
-    const deductMinutes = -Math.abs(minutes)
-    const taskTitle = title || `🎮 Sessão de Jogo (-${minutes}m)`
-
-    try {
-      const newBalance = Math.max(0, activeProfile.current_balance_minutes + deductMinutes)
-      setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
-
-      const newLog = await dataService.addBalanceLog({
-        profile_id: activeProfile.id,
-        task_title: taskTitle,
-        minutes_applied: deductMinutes,
-        recorded_by: currentAuthor
-      })
-
-      setLogs((prev) => [newLog, ...prev])
-
-      addToast(
-        `🎮 Jogo liberado! -${minutes} min debitados`,
-        `Registrado por ${currentAuthor}. Bom jogo, Gael!`,
-        'success'
-      )
-    } catch (err) {
-      console.error('Failed to redeem:', err)
-      addToast('Erro ao abater tempo', undefined, 'penalty')
-      loadData()
-    }
-  }
-
-  // Start active game session timer (Synchronizes in Realtime with Spouse!)
+  // Start active game session timer
   const handleStartSessionTimer = async (minutes: number) => {
     if (!activeProfile) return
 
@@ -231,32 +304,39 @@ export function App() {
         endTime,
         totalMinutes: minutes,
         remainingSeconds: minutes * 60,
-        isActive: true
+        isActive: true,
       })
 
       setActiveSession(session)
       setIsAlarmModalOpen(false)
+      setIsGameOver(false)
       sounds.stopAlarm()
       addToast(`Cronômetro de ${minutes}m iniciado!`, 'Alarme tocará quando o tempo do Gael acabar.', 'info')
+      loadData()
     } catch (e) {
       console.error('Failed to start session timer:', e)
     }
   }
 
+  // Stop session timer
   const handleStopSessionTimer = async () => {
     sounds.stopAlarm()
     setIsAlarmModalOpen(false)
+    setIsGameOver(false)
     if (activeProfile) {
       await dataService.stopActiveSession(activeProfile.id)
     }
     setActiveSession(null)
     addToast('Sessão de jogo do Gael finalizada', undefined, 'info')
+    loadData()
   }
 
+  // Add minutes tolerance
   const handleAddMinutesToSession = async (addedMins: number) => {
     if (!activeProfile || !activeSession) return
     sounds.stopAlarm()
     setIsAlarmModalOpen(false)
+    setIsGameOver(false)
 
     await dataService.addToleranceToSession(activeProfile.id, addedMins)
     const updated = await dataService.getActiveSession(activeProfile.id)
@@ -264,9 +344,9 @@ export function App() {
     addToast(`+${addedMins} min de tolerância adicionados`, 'Gael pode salvar a partida!', 'info')
   }
 
-  // Time is up trigger
-  const handleTimeUp = () => {
-    setIsAlarmModalOpen(true)
+  // Time is expired in Session Screen -> Trigger Game Over screen!
+  const handleSessionTimeExpired = () => {
+    setIsGameOver(true)
   }
 
   // Custom manual adjust
@@ -289,13 +369,13 @@ export function App() {
 
     try {
       const newBalance = Math.max(0, activeProfile.current_balance_minutes + minutes)
-      setActiveProfile((prev) => prev ? { ...prev, current_balance_minutes: newBalance } : null)
+      setActiveProfile((prev) => (prev ? { ...prev, current_balance_minutes: newBalance } : null))
 
       const newLog = await dataService.addBalanceLog({
         profile_id: activeProfile.id,
         task_title: title,
         minutes_applied: minutes,
-        recorded_by: currentAuthor
+        recorded_by: currentAuthor,
       })
 
       setLogs((prev) => [newLog, ...prev])
@@ -348,17 +428,27 @@ export function App() {
       {/* Toast Notification Container */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Header with Papai/Mamãe selector and Share button */}
-      <Header
-        currentAuthor={currentAuthor}
-        onSelectAuthor={handleSelectAuthor}
-        activeProfile={activeProfile}
-        soundEnabled={soundEnabled}
-        onToggleSound={handleToggleSound}
-        onOpenSettings={() => setIsSupabaseModalOpen(true)}
-        onOpenShare={() => setIsShareModalOpen(true)}
-        supabaseConnected={supabaseConnected}
+      {/* Mode Switch Header (Sou o Gael 🎮 vs Área dos Pais 🔒) */}
+      <ModeSwitchHeader
+        currentMode={appMode}
+        onSelectKidMode={handleSwitchToKidMode}
+        onRequestParentMode={handleRequestParentMode}
+        pendingCount={pendingTasks.length}
       />
+
+      {/* Parent Header (visible only in Parent Mode) */}
+      {appMode === 'parent' && (
+        <Header
+          currentAuthor={currentAuthor}
+          onSelectAuthor={handleSelectAuthor}
+          activeProfile={activeProfile}
+          soundEnabled={soundEnabled}
+          onToggleSound={handleToggleSound}
+          onOpenSettings={() => setIsSupabaseModalOpen(true)}
+          onOpenShare={() => setIsShareModalOpen(true)}
+          supabaseConnected={supabaseConnected}
+        />
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-md w-full mx-auto px-4 pt-4 space-y-4">
@@ -369,53 +459,79 @@ export function App() {
           </div>
         ) : activeProfile ? (
           <>
-            {/* Active Game Session Countdown Card (with loud alarm support) */}
-            {activeSession && (
-              <ActiveTimerCard
-                session={activeSession}
-                onStop={handleStopSessionTimer}
-                onAddMinutes={handleAddMinutesToSession}
-                onTimeUp={handleTimeUp}
+            {/* =========================================
+                MODO JOGADOR: QG DO GAEL (KID MODE)
+               ========================================= */}
+            {appMode === 'kid' ? (
+              <GaelDashboard
+                profile={activeProfile}
+                tasks={taskTemplates}
+                pendingTasks={pendingTasks}
+                onStartGameSession={handleStartSessionTimer}
+                onMarkTaskDone={handleMarkTaskDone}
+                onChangeAvatar={handleChangeAvatar}
               />
-            )}
+            ) : (
+              /* =========================================
+                 MODO ADMINISTRATIVO: ÁREA DOS PAIS
+                 ========================================= */
+              <>
+                {/* Pending Tasks Banner (Gael marcou como feito) */}
+                <PendingApprovalsBanner
+                  pendingTasks={pendingTasks}
+                  onApprove={handleApproveTask}
+                  onReject={handleRejectTask}
+                />
 
-            {/* Hero Balance Card */}
-            <BalanceHeroCard
-              profile={activeProfile}
-              onQuickRedeem={handleQuickRedeem}
-              onOpenCustomAdjust={() => setIsCustomAdjustOpen(true)}
-              onStartSessionTimer={handleStartSessionTimer}
-            />
+                {/* Active Game Session Countdown Card (if running) */}
+                {activeSession && (
+                  <ActiveTimerCard
+                    session={activeSession}
+                    onStop={handleStopSessionTimer}
+                    onAddMinutes={handleAddMinutesToSession}
+                    onTimeUp={() => setIsAlarmModalOpen(true)}
+                  />
+                )}
 
-            {/* Quick Missions 1-Touch Grid */}
-            <QuickMissionsGrid
-              tasks={taskTemplates}
-              onExecuteTask={handleExecuteTask}
-              onOpenCreateTask={() => setIsCustomAdjustOpen(true)}
-            />
+                {/* Hero Balance Card */}
+                <BalanceHeroCard
+                  profile={activeProfile}
+                  onQuickRedeem={handleStartSessionTimer}
+                  onOpenCustomAdjust={() => setIsCustomAdjustOpen(true)}
+                  onStartSessionTimer={handleStartSessionTimer}
+                />
 
-            {/* History Preview Quick Bar */}
-            <div className="pt-2">
-              <button
-                onClick={() => setIsHistoryOpen(true)}
-                className="w-full py-3 px-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all flex items-center justify-between text-xs font-semibold shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-gamer-purple-light" />
-                  <span>Ver Histórico de Lançamentos</span>
-                  <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">
-                    {logs.length} registros
-                  </span>
+                {/* Quick Missions 1-Touch Grid */}
+                <QuickMissionsGrid
+                  tasks={taskTemplates}
+                  onExecuteTask={handleExecuteTask}
+                  onOpenCreateTask={() => setIsCustomAdjustOpen(true)}
+                />
+
+                {/* History Quick Bar */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="w-full py-3 px-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all flex items-center justify-between text-xs font-semibold shadow-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4 text-gamer-purple-light" />
+                      <span>Ver Histórico de Lançamentos</span>
+                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">
+                        {logs.length} registros
+                      </span>
+                    </div>
+                    <span className="text-gamer-purple-light font-bold">Abrir &rarr;</span>
+                  </button>
                 </div>
-                <span className="text-gamer-purple-light font-bold">Abrir &rarr;</span>
-              </button>
-            </div>
+              </>
+            )}
           </>
         ) : null}
       </main>
 
-      {/* Floating Bottom Quick Bar on Mobile */}
-      {activeProfile && (
+      {/* Floating Bottom Bar in Parent Mode */}
+      {appMode === 'parent' && activeProfile && (
         <div className="fixed bottom-0 left-0 right-0 p-3 bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 z-20">
           <div className="max-w-md mx-auto flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs">
@@ -453,7 +569,42 @@ export function App() {
         </div>
       )}
 
-      {/* Modals & Drawers */}
+      {/* =========================================
+          TELAS CHEIAS IMERSIVAS: SESSÃO & GAME OVER
+         ========================================= */}
+
+      {/* Immersive Arcade Session Screen (When active game session is running in Kid Mode) */}
+      {activeSession && appMode === 'kid' && !isGameOver && (
+        <GameSessionScreen
+          session={activeSession}
+          onTimeExpired={handleSessionTimeExpired}
+          onRequestEarlyExit={() => setIsPinModalOpen(true)}
+        />
+      )}
+
+      {/* Fullscreen Game Over Screen (When time reaches 00:00:00) */}
+      {isGameOver && (
+        <GameOverScreen
+          onUnlockSuccess={() => {
+            setIsGameOver(false)
+            handleStopSessionTimer()
+          }}
+          onGoToMissions={() => {
+            setIsGameOver(false)
+            handleStopSessionTimer()
+            setAppMode('kid')
+          }}
+        />
+      )}
+
+      {/* PIN Security Modal */}
+      <PinModal
+        isOpen={isPinModalOpen}
+        onClose={() => setIsPinModalOpen(false)}
+        onSuccess={handlePinSuccess}
+      />
+
+      {/* Parent Modals */}
       <HistoryDrawer
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
@@ -482,7 +633,6 @@ export function App() {
         currentAuthor={currentAuthor}
       />
 
-      {/* Dedicated Loud Alarm Modal when countdown reaches 0 */}
       <AlarmModal
         isOpen={isAlarmModalOpen}
         kidName="Gael"

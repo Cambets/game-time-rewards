@@ -1,10 +1,12 @@
 import { getSupabaseClient, getStoredSupabaseConfig } from '../lib/supabase'
-import { Profile, TaskTemplate, BalanceLog, ActiveGameSession } from '../types'
+import { Profile, TaskTemplate, BalanceLog, ActiveGameSession, PendingTask, KidAvatar, ParentAuthor } from '../types'
 
-const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v2'
-const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v2'
-const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v2'
-const LOCAL_STORAGE_KEY_SESSION = 'gametime_local_session_v2'
+const LOCAL_STORAGE_KEY_PROFILES = 'gametime_local_profiles_v3'
+const LOCAL_STORAGE_KEY_TEMPLATES = 'gametime_local_templates_v3'
+const LOCAL_STORAGE_KEY_LOGS = 'gametime_local_logs_v3'
+const LOCAL_STORAGE_KEY_SESSION = 'gametime_local_session_v3'
+const LOCAL_STORAGE_KEY_PENDING = 'gametime_local_pending_v3'
+const LOCAL_STORAGE_KEY_PIN = 'gametime_parent_pin_v3'
 
 // Initial seed data: Only Gael
 const INITIAL_PROFILES: Profile[] = [
@@ -13,6 +15,8 @@ const INITIAL_PROFILES: Profile[] = [
     name: 'Gael',
     current_balance_minutes: 45,
     daily_max_minutes: 90,
+    avatar_id: 'warrior',
+    xp: 140,
     updated_at: new Date().toISOString()
   }
 ]
@@ -103,6 +107,22 @@ export const dataService = {
     return isConfigured ? 'supabase' : 'local'
   },
 
+  // --- PIN DE SEGURANÇA DOS PAIS ---
+  getParentPin(): string {
+    return localStorage.getItem(LOCAL_STORAGE_KEY_PIN) || '1234'
+  },
+
+  verifyParentPin(inputPin: string): boolean {
+    const current = this.getParentPin()
+    return inputPin.trim() === current.trim()
+  },
+
+  setParentPin(newPin: string): void {
+    if (newPin && newPin.length === 4) {
+      localStorage.setItem(LOCAL_STORAGE_KEY_PIN, newPin)
+    }
+  },
+
   // 1. PROFILES
   async getProfiles(): Promise<Profile[]> {
     const supabase = getSupabaseClient()
@@ -136,11 +156,13 @@ export const dataService = {
 
         if (!fetchErr && current) {
           const newBalance = Math.max(0, (current.current_balance_minutes || 0) + deltaMinutes)
+          const newXp = (current.xp || 0) + (deltaMinutes > 0 ? deltaMinutes * 10 : 0)
           
           const { data: updated, error: updateErr } = await supabase
             .from('profiles')
             .update({
               current_balance_minutes: newBalance,
+              xp: newXp,
               updated_at: new Date().toISOString()
             })
             .eq('id', profileId)
@@ -162,9 +184,11 @@ export const dataService = {
     const updatedList = profiles.map(p => {
       if (p.id === profileId) {
         const newBalance = Math.max(0, p.current_balance_minutes + deltaMinutes)
+        const newXp = (p.xp || 0) + (deltaMinutes > 0 ? deltaMinutes * 10 : 0)
         updatedProfile = {
           ...p,
           current_balance_minutes: newBalance,
+          xp: newXp,
           updated_at: new Date().toISOString()
         }
         return updatedProfile
@@ -174,6 +198,24 @@ export const dataService = {
 
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, updatedList)
     return updatedProfile || profiles[0]
+  },
+
+  async updateAvatar(profileId: string, avatarId: KidAvatar): Promise<void> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ avatar_id: avatarId, updated_at: new Date().toISOString() })
+          .eq('id', profileId)
+      } catch (err) {
+        console.warn('Supabase updateAvatar failed:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    const updated = profiles.map(p => p.id === profileId ? { ...p, avatar_id: avatarId } : p)
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
   },
 
   async updateDailyMax(profileId: string, dailyMaxMinutes: number): Promise<void> {
@@ -329,7 +371,110 @@ export const dataService = {
     setLocalData(LOCAL_STORAGE_KEY_LOGS, filtered)
   },
 
-  // 4. ACTIVE GAME SESSION SYNC (Papai e Mamãe veem o mesmo cronômetro em tempo real)
+  // 4. PENDING TASKS (O Gael marca que fez e os pais aprovam no painel)
+  async getPendingTasks(profileId: string): Promise<PendingTask[]> {
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('pending_tasks')
+          .select('*')
+          .eq('profile_id', profileId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          return data as PendingTask[]
+        }
+      } catch (err) {
+        console.warn('Supabase getPendingTasks failed, using local:', err)
+      }
+    }
+
+    const all = getLocalData<PendingTask[]>(LOCAL_STORAGE_KEY_PENDING, [])
+    return all.filter(t => t.profile_id === profileId && t.status === 'pending')
+  },
+
+  async createPendingTask(data: { profile_id: string; template_id: string; task_title: string; minutes_reward: number }): Promise<PendingTask> {
+    const newTask: PendingTask = {
+      ...data,
+      id: crypto.randomUUID ? crypto.randomUUID() : `pending-${Date.now()}`,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data: created, error } = await supabase
+          .from('pending_tasks')
+          .insert(newTask)
+          .select()
+          .single()
+
+        if (!error && created) {
+          return created as PendingTask
+        }
+      } catch (err) {
+        console.warn('Supabase createPendingTask failed:', err)
+      }
+    }
+
+    const all = getLocalData<PendingTask[]>(LOCAL_STORAGE_KEY_PENDING, [])
+    all.unshift(newTask)
+    setLocalData(LOCAL_STORAGE_KEY_PENDING, all)
+    return newTask
+  },
+
+  async approvePendingTask(taskId: string, recordedBy: ParentAuthor): Promise<void> {
+    const all = getLocalData<PendingTask[]>(LOCAL_STORAGE_KEY_PENDING, [])
+    const target = all.find(t => t.id === taskId)
+
+    if (target) {
+      // Credit balance and add log
+      await this.addBalanceLog({
+        profile_id: target.profile_id,
+        task_title: `🎯 ${target.task_title} (Missão Aprovada)`,
+        minutes_applied: target.minutes_reward,
+        recorded_by: recordedBy
+      })
+
+      // Update status
+      target.status = 'approved'
+      setLocalData(LOCAL_STORAGE_KEY_PENDING, all.filter(t => t.id !== taskId))
+    }
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('pending_tasks')
+          .update({ status: 'approved' })
+          .eq('id', taskId)
+      } catch (err) {
+        console.warn('Supabase approvePendingTask failed:', err)
+      }
+    }
+  },
+
+  async rejectPendingTask(taskId: string): Promise<void> {
+    const all = getLocalData<PendingTask[]>(LOCAL_STORAGE_KEY_PENDING, [])
+    setLocalData(LOCAL_STORAGE_KEY_PENDING, all.filter(t => t.id !== taskId))
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        await supabase
+          .from('pending_tasks')
+          .update({ status: 'rejected' })
+          .eq('id', taskId)
+      } catch (err) {
+        console.warn('Supabase rejectPendingTask failed:', err)
+      }
+    }
+  },
+
+  // 5. ACTIVE GAME SESSION SYNC
   async getActiveSession(profileId: string): Promise<ActiveGameSession | null> {
     const supabase = getSupabaseClient()
     if (supabase) {
@@ -376,16 +521,17 @@ export const dataService = {
       id: crypto.randomUUID ? crypto.randomUUID() : `session-${Date.now()}`
     }
 
+    // Deduct minutes from balance upon starting game session
+    await this.updateProfileBalance(newSession.profileId, -newSession.totalMinutes)
+
     const supabase = getSupabaseClient()
     if (supabase) {
       try {
-        // Deactivate old sessions first
         await supabase
           .from('active_sessions')
           .update({ is_active: false })
           .eq('profile_id', newSession.profileId)
 
-        // Insert new active session
         await supabase
           .from('active_sessions')
           .insert({
@@ -463,11 +609,12 @@ export const dataService = {
 
     try {
       const channel = supabase
-        .channel('gametime_realtime_v2')
+        .channel('gametime_realtime_v3')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => onUpdate())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'balance_logs' }, () => onUpdate())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'task_templates' }, () => onUpdate())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_tasks' }, () => onUpdate())
         .subscribe()
 
       return () => {
@@ -483,6 +630,7 @@ export const dataService = {
     setLocalData(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
     setLocalData(LOCAL_STORAGE_KEY_TEMPLATES, INITIAL_TEMPLATES)
     setLocalData(LOCAL_STORAGE_KEY_LOGS, INITIAL_LOGS)
+    setLocalData(LOCAL_STORAGE_KEY_PENDING, [])
     localStorage.removeItem(LOCAL_STORAGE_KEY_SESSION)
   }
 }
