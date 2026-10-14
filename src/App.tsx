@@ -16,6 +16,7 @@ import { CustomMinutesModal } from './components/CustomMinutesModal'
 import { SupabaseModal } from './components/SupabaseModal'
 import { ShareModal } from './components/ShareModal'
 import { AlarmModal } from './components/AlarmModal'
+import { ProfileSelectScreen } from './components/ProfileSelectScreen'
 import { ToastContainer, ToastMessage } from './components/Toast'
 import { dataService } from './services/dataService'
 import { sounds } from './lib/sound'
@@ -28,19 +29,46 @@ import {
   TaskCategory,
   AppMode,
   PendingTask,
-  KidAvatar
+  KidAvatar,
+  AppUserRole
 } from './types'
 import { History, Share2, Gamepad2, Lock } from 'lucide-react'
 
 export function App() {
+  // Family profile saved role: 'gael' | 'papai' | 'mamae' | null
+  const [currentUserRole, setCurrentUserRole] = useState<AppUserRole | null>(() => {
+    if (typeof window === 'undefined') return null
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlUser = urlParams.get('user') || urlParams.get('perfil')
+    if (urlUser === 'gael' || urlUser === 'papai' || urlUser === 'mamae') {
+      return urlUser as AppUserRole
+    }
+    return (localStorage.getItem('gametime_saved_user') as AppUserRole) || null
+  })
+
+  // Profile selection screen opens on first entry if no saved profile
+  const [isProfileSelectOpen, setIsProfileSelectOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    const saved = localStorage.getItem('gametime_saved_user')
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlUser = urlParams.get('user') || urlParams.get('perfil')
+    return !saved && !urlUser
+  })
+
   // Current Mode: 'kid' (QG do Gael) or 'parent' (Área dos Pais)
   const [appMode, setAppMode] = useState<AppMode>(() => {
-    return (localStorage.getItem('gametime_app_mode') as AppMode) || 'kid'
+    const saved = (typeof window !== 'undefined' ? localStorage.getItem('gametime_saved_user') : null) as AppUserRole | null
+    if (saved === 'papai' || saved === 'mamae') return 'parent'
+    if (saved === 'gael') return 'kid'
+    return (typeof window !== 'undefined' ? (localStorage.getItem('gametime_app_mode') as AppMode) : null) || 'kid'
   })
 
   // Author state (for parents)
   const [currentAuthor, setCurrentAuthor] = useState<ParentAuthor>(() => {
-    return (localStorage.getItem('gametime_author') as ParentAuthor) || 'Papai'
+    const saved = (typeof window !== 'undefined' ? localStorage.getItem('gametime_saved_user') : null) as AppUserRole | null
+    if (saved === 'mamae') return 'Mamãe'
+    if (saved === 'papai') return 'Papai'
+    return (typeof window !== 'undefined' ? (localStorage.getItem('gametime_author') as ParentAuthor) : null) || 'Papai'
   })
 
   // Sound state
@@ -152,6 +180,32 @@ export function App() {
     localStorage.setItem('gametime_app_mode', 'parent')
     sounds.play1Up()
     addToast('Área dos Pais Desbloqueada 🔒', 'Acesso administrativo liberado.', 'success')
+  }
+
+  // Handle family profile selection (Gael vs Papai vs Mamãe)
+  const handleSelectRole = (role: AppUserRole, remember: boolean) => {
+    if (remember) {
+      localStorage.setItem('gametime_saved_user', role)
+    } else {
+      localStorage.removeItem('gametime_saved_user')
+    }
+    setCurrentUserRole(role)
+    setIsProfileSelectOpen(false)
+
+    if (role === 'gael') {
+      setAppMode('kid')
+      localStorage.setItem('gametime_app_mode', 'kid')
+      sounds.play1Up()
+      addToast('Bem-vindo ao seu QG, Gael! 🚀', 'Mundo Gamer ativado!', 'success')
+    } else {
+      setAppMode('parent')
+      localStorage.setItem('gametime_app_mode', 'parent')
+      const author: ParentAuthor = role === 'papai' ? 'Papai' : 'Mamãe'
+      setCurrentAuthor(author)
+      localStorage.setItem('gametime_author', author)
+      sounds.play1Up()
+      addToast(`Bem-vindo(a), ${author}! 🔒`, 'Painel Administrativo liberado.', 'success')
+    }
   }
 
   // Author change
@@ -542,6 +596,8 @@ export function App() {
         onSelectKidMode={handleSwitchToKidMode}
         onRequestParentMode={handleRequestParentMode}
         pendingCount={pendingTasks.length}
+        onOpenProfileSelect={() => setIsProfileSelectOpen(true)}
+        currentAuthor={currentAuthor}
         avatarImage={activeProfile?.avatar_id === 'astronaut' || !activeProfile?.avatar_id ? '/images/gael-astronaut-avatar.png' : undefined}
         avatarEmoji={
           activeProfile?.avatar_id === 'warrior'
@@ -778,6 +834,15 @@ export function App() {
         kidName="Gael"
         onDismiss={handleStopSessionTimer}
         onAddTolerance={handleAddMinutesToSession}
+      />
+
+      {/* Family Profile Select Screen (Gael vs Papai vs Mamãe) */}
+      <ProfileSelectScreen
+        isOpen={isProfileSelectOpen}
+        onClose={() => setIsProfileSelectOpen(false)}
+        canClose={Boolean(currentUserRole)}
+        onSelectRole={handleSelectRole}
+        currentRole={currentUserRole}
       />
     </div>
   )

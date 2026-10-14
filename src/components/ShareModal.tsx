@@ -36,8 +36,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden my-auto relative">
         {/* Header */}
         <div className="p-4 border-b border-surface-border bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center gap-2.5">

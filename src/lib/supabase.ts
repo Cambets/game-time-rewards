@@ -24,8 +24,15 @@ const checkUrlForPairing = () => {
       saveSupabaseConfig(decodeURIComponent(urlParam), decodeURIComponent(keyParam))
       if (roleParam === 'mamae') {
         localStorage.setItem('gametime_author', 'Mamãe')
+        localStorage.setItem('gametime_saved_user', 'mamae')
+        localStorage.setItem('gametime_app_mode', 'parent')
       } else if (roleParam === 'papai') {
         localStorage.setItem('gametime_author', 'Papai')
+        localStorage.setItem('gametime_saved_user', 'papai')
+        localStorage.setItem('gametime_app_mode', 'parent')
+      } else if (roleParam === 'gael') {
+        localStorage.setItem('gametime_saved_user', 'gael')
+        localStorage.setItem('gametime_app_mode', 'kid')
       }
       
       // Clean URL from browser bar without page reload
@@ -64,12 +71,12 @@ export const generateShareLink = (targetRole: 'Mamãe' | 'Papai'): string => {
   const { url, key, isConfigured } = getStoredSupabaseConfig()
   const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'http://localhost:5173'
   
+  const roleSlug = targetRole === 'Mamãe' ? 'mamae' : 'papai'
   if (!isConfigured) {
-    return base
+    return `${base}?user=${roleSlug}`
   }
 
-  const roleSlug = targetRole === 'Mamãe' ? 'mamae' : 'papai'
-  return `${base}?sb_url=${encodeURIComponent(url)}&sb_key=${encodeURIComponent(key)}&role=${roleSlug}`
+  return `${base}?sb_url=${encodeURIComponent(url)}&sb_key=${encodeURIComponent(key)}&role=${roleSlug}&user=${roleSlug}`
 }
 
 let supabaseInstance: SupabaseClient | null = null

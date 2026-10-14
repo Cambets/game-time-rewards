@@ -2,6 +2,8 @@ export type ParentAuthor = 'Papai' | 'Mamãe'
 
 export type AppMode = 'kid' | 'parent'
 
+export type AppUserRole = 'gael' | 'papai' | 'mamae'
+
 export type KidAvatar = 'warrior' | 'robot' | 'mage' | 'racer' | 'astronaut'
 
 export type PetType = 'robot' | 'dragon' | 'dog' | 'cat'

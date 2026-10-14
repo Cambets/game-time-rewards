@@ -105,8 +105,8 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({
   const isConnected = dataService.isSupabaseActive()
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-surface border border-surface-border rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-lg bg-surface border border-surface-border rounded-3xl shadow-2xl max-h-[90vh] my-auto relative flex flex-col overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-surface-border bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center gap-2.5">

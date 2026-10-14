@@ -9,6 +9,8 @@ interface ModeSwitchHeaderProps {
   pendingCount?: number
   avatarImage?: string
   avatarEmoji?: string
+  onOpenProfileSelect?: () => void
+  currentAuthor?: 'Papai' | 'Mamãe'
 }
 
 export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
@@ -18,6 +20,8 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
   pendingCount = 0,
   avatarImage,
   avatarEmoji,
+  onOpenProfileSelect,
+  currentAuthor = 'Papai',
 }) => {
   return (
     <div className="w-full bg-[#0c0d14]/90 border-b border-[#23273e] px-4 py-2 backdrop-blur-md sticky top-0 z-40">
@@ -45,10 +49,26 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
               </h1>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-400 bg-[#131522] px-2.5 py-0.5 rounded-full border border-[#23273e]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10e599] animate-ping" />
-            <span className="text-[#10e599]">NEO-ARCADE</span>
-          </div>
+
+          {/* Active Profile Pill / Switcher */}
+          {onOpenProfileSelect ? (
+            <button
+              onClick={onOpenProfileSelect}
+              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-300 hover:text-white bg-[#131522] hover:bg-[#1b1e33] px-2.5 py-1 rounded-full border border-[#23273e] hover:border-purple-500/50 transition-all active:scale-95 group"
+              title="Trocar quem está usando o app"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10e599]" />
+              <span>
+                {currentMode === 'kid' ? 'Gael 🚀' : currentAuthor === 'Papai' ? 'Papai 🧔' : 'Mamãe 👩'}
+              </span>
+              <span className="text-[9px] text-[#10e599] group-hover:underline font-mono">Trocar 🔄</span>
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-400 bg-[#131522] px-2.5 py-0.5 rounded-full border border-[#23273e]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10e599] animate-ping" />
+              <span className="text-[#10e599]">NEO-ARCADE</span>
+            </div>
+          )}
         </div>
 
         {/* Toggle Mode Pill */}
