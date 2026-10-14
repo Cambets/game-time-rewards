@@ -13,21 +13,22 @@ export const AddProfileModal: React.FC<AddProfileModalProps> = ({
   onAdd,
 }) => {
   const [name, setName] = useState('')
-  const [dailyMax, setDailyMax] = useState(90)
+  const [dailyMax, setDailyMax] = useState<number | ''>(90)
 
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    onAdd(name.trim(), dailyMax)
+    const finalDailyMax = typeof dailyMax === 'number' && dailyMax > 0 ? dailyMax : 90
+    onAdd(name.trim(), finalDailyMax)
     setName('')
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden my-auto relative">
         <div className="p-4 border-b border-surface-border bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gamer-purple/20 text-gamer-purple-light">
@@ -86,7 +87,15 @@ export const AddProfileModal: React.FC<AddProfileModalProps> = ({
               min="15"
               max="300"
               value={dailyMax}
-              onChange={(e) => setDailyMax(parseInt(e.target.value) || 90)}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === '') {
+                  setDailyMax('')
+                } else {
+                  const parsed = parseInt(val, 10)
+                  setDailyMax(isNaN(parsed) ? '' : Math.max(1, parsed))
+                }
+              }}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gamer-purple font-mono"
             />
           </div>

@@ -20,13 +20,13 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
   const [mode, setMode] = useState<'adjust' | 'create_task'>('adjust')
   
   // Custom adjust state
-  const [minutes, setMinutes] = useState<number>(15)
+  const [minutes, setMinutes] = useState<number | ''>(15)
   const [isDeduction, setIsDeduction] = useState<boolean>(false)
   const [reason, setReason] = useState<string>('')
 
   // Create task template state
   const [templateTitle, setTemplateTitle] = useState('')
-  const [templateMinutes, setTemplateMinutes] = useState(10)
+  const [templateMinutes, setTemplateMinutes] = useState<number | ''>(10)
   const [templateCategory, setTemplateCategory] = useState<TaskCategory>('rotina')
   const [templateIcon, setTemplateIcon] = useState('Sparkles')
 
@@ -34,7 +34,8 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
 
   const handleAdjustSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const finalMinutes = isDeduction ? -Math.abs(minutes) : Math.abs(minutes)
+    const numMinutes = typeof minutes === 'number' && minutes > 0 ? minutes : 1
+    const finalMinutes = isDeduction ? -Math.abs(numMinutes) : Math.abs(numMinutes)
     const finalTitle = reason.trim() || (isDeduction ? 'Ajuste Manual (-)' : 'Bônus Manual (+)')
     onSubmitCustom(finalMinutes, finalTitle)
     onClose()
@@ -44,9 +45,10 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
     e.preventDefault()
     if (!templateTitle.trim()) return
 
+    const numTemplateMinutes = typeof templateMinutes === 'number' && templateMinutes > 0 ? templateMinutes : 5
     onCreateTemplate({
       title: templateTitle.trim(),
-      minutes_reward: templateCategory === 'penalidade' ? -Math.abs(templateMinutes) : Math.abs(templateMinutes),
+      minutes_reward: templateCategory === 'penalidade' ? -Math.abs(numTemplateMinutes) : Math.abs(numTemplateMinutes),
       category: templateCategory,
       icon: templateIcon,
       active: true
@@ -55,8 +57,8 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl shadow-2xl overflow-hidden my-auto relative">
         {/* Header Tabs */}
         <div className="p-4 border-b border-surface-border bg-slate-900/90 flex items-center justify-between">
           <div className="flex gap-2">
@@ -128,8 +130,8 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
               <label className="text-xs font-semibold text-slate-400 block mb-1.5">
                 Quantidade de Minutos
               </label>
-              <div className="grid grid-cols-5 gap-1.5 mb-2">
-                {[5, 10, 15, 30, 45].map((m) => (
+              <div className="grid grid-cols-6 gap-1.5 mb-2">
+                {[5, 10, 15, 20, 30, 45].map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -137,8 +139,8 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
                     className={`py-2 rounded-xl text-xs font-mono font-bold border transition-all ${
                       minutes === m
                         ? isDeduction
-                          ? 'bg-rose-600 text-white border-rose-400'
-                          : 'bg-emerald-600 text-white border-emerald-400'
+                          ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
+                          : 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
                         : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
                     }`}
                   >
@@ -151,9 +153,17 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
                 min="1"
                 max="240"
                 value={minutes}
-                onChange={(e) => setMinutes(Math.max(1, parseInt(e.target.value) || 0))}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '') {
+                    setMinutes('')
+                  } else {
+                    const parsed = parseInt(val, 10)
+                    setMinutes(isNaN(parsed) ? '' : Math.max(1, parsed))
+                  }
+                }}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gamer-purple font-mono"
-                placeholder="Ou digite o valor..."
+                placeholder="Ou digite o valor livremente..."
               />
             </div>
 
@@ -180,7 +190,7 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
             >
               <Check className="w-4 h-4" />
               <span>
-                Confirmar Lançamento ({isDeduction ? `-${minutes}` : `+${minutes}`} min)
+                Confirmar Lançamento ({isDeduction ? `-${minutes || 0}` : `+${minutes || 0}`} min)
               </span>
             </button>
           </form>
@@ -208,10 +218,18 @@ export const CustomMinutesModal: React.FC<CustomMinutesModalProps> = ({
                 </label>
                 <input
                   type="number"
-                  min="5"
+                  min="1"
                   max="120"
                   value={templateMinutes}
-                  onChange={(e) => setTemplateMinutes(parseInt(e.target.value) || 5)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === '') {
+                      setTemplateMinutes('')
+                    } else {
+                      const parsed = parseInt(val, 10)
+                      setTemplateMinutes(isNaN(parsed) ? '' : Math.max(1, parsed))
+                    }
+                  }}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gamer-green font-mono"
                 />
               </div>
