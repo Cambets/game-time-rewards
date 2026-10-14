@@ -64,109 +64,155 @@ export const GameSessionScreen: React.FC<GameSessionScreenProps> = ({
   const isLast10Minutes = secondsLeft <= 600 && !isLastMinute
   const isSafeZone = secondsLeft > 600
 
+  // Calculate circular progress percentage
+  const totalSeconds = Math.max(1, session.totalMinutes * 60)
+  const progressPercent = Math.min(100, Math.max(0, (secondsLeft / totalSeconds) * 100))
+
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col justify-between p-6 select-none transition-colors duration-700 ${
+      className={`fixed inset-0 z-50 flex flex-col justify-between p-5 select-none transition-colors duration-700 overflow-y-auto ${
         isLastMinute
-          ? 'bg-gradient-to-b from-rose-950 via-slate-950 to-rose-950 animate-pulse'
+          ? 'bg-gradient-to-b from-rose-950 via-[#0c0d14] to-rose-950 animate-pulse'
           : isLast10Minutes
-          ? 'bg-gradient-to-b from-amber-950/90 via-slate-950 to-slate-950'
-          : 'bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950'
+          ? 'bg-gradient-to-b from-amber-950/80 via-[#0c0d14] to-[#0c0d14]'
+          : 'bg-gradient-to-b from-purple-950/50 via-[#0c0d14] to-[#0c0d14]'
       }`}
     >
-      {/* Top Bar */}
-      <div className="max-w-md mx-auto w-full flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className={`p-2 rounded-xl border ${
-              isLastMinute
-                ? 'bg-rose-500 text-white border-rose-400 animate-bounce'
-                : isLast10Minutes
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-            }`}
-          >
-            <Gamepad2 className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-gamer font-bold text-sm text-white tracking-wider">
-              SESSÃO DE JOGO: GAEL
-            </h3>
-            <span className="text-[10px] text-slate-400">Modo Arcade Ativo</span>
-          </div>
-        </div>
-
-        {/* Early exit with parents PIN */}
+      {/* Top Bar (Stitch Screen 3) */}
+      <div className="max-w-md mx-auto w-full flex items-center justify-between pt-1">
         <button
           onClick={onRequestEarlyExit}
-          className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold"
-          title="Encerrar sessão (Requer PIN dos pais)"
+          className="p-2 rounded-xl bg-[#131522] hover:bg-[#181b2c] text-slate-300 text-xs font-bold border border-[#23273e] flex items-center gap-1.5 transition-colors"
+          title="Encerrar sessão com PIN"
         >
           <Lock className="w-3.5 h-3.5 text-amber-400" />
-          <span>Sair</span>
+          <span>Sair (PIN)</span>
         </button>
+
+        <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-amber-300 bg-[#161828] px-3 py-1 rounded-full border border-amber-500/40">
+          <img src="/images/badge-star.png" alt="Star" className="w-4 h-4 object-contain" />
+          <span>SESSÃO GAEL</span>
+        </div>
       </div>
 
-      {/* Center Hero Countdown */}
-      <div className="max-w-md mx-auto w-full text-center space-y-6 my-auto">
-        {/* Status Alert Badge */}
-        <div>
-          {isLastMinute ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-600 text-white font-gamer font-bold text-xs uppercase tracking-wider shadow-glow-rose animate-bounce">
-              <AlertTriangle className="w-4 h-4" />
-              <span>ÚLTIMO MINUTO! SALVE AGORA!</span>
-            </div>
-          ) : isLast10Minutes ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-gamer font-bold text-xs uppercase tracking-wider animate-pulse">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span>10 Minutos Restantes: Prepare-se para salvar!</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-gamer font-bold text-xs uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>Tempo de Game em Andamento</span>
-            </div>
-          )}
+      {/* Center Hero: Circular Screen Timer (Stitch) */}
+      <div className="max-w-md mx-auto w-full text-center space-y-4 my-auto py-2">
+        {/* Active Console Chip */}
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10e599]/15 border border-[#10e599]/30 text-[#10e599] font-gamer font-bold text-xs uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#10e599] animate-ping" />
+            <span>SESSÃO DE JOGO ATIVA • CONECTADO</span>
+          </div>
+          <p className="text-xs font-gamer text-slate-400">
+            🎮 Nintendo Switch / Games
+          </p>
         </div>
 
-        {/* GIGANTIC ARCADE TIMER */}
-        <div className="py-4">
-          <div
-            className={`font-gamer font-bold text-6xl xs:text-7xl md:text-8xl tracking-wider font-mono drop-shadow-2xl transition-colors ${
+        {/* Circular Ring Timer */}
+        <div className="relative w-64 h-64 mx-auto flex items-center justify-center my-2">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+            {/* Background ring */}
+            <circle
+              cx="100"
+              cy="100"
+              r="84"
+              className="stroke-[#181b2c]"
+              strokeWidth="11"
+              fill="transparent"
+            />
+            {/* Glowing countdown ring */}
+            <circle
+              cx="100"
+              cy="100"
+              r="84"
+              className={`transition-all duration-1000 ease-linear ${
+                isLastMinute
+                  ? 'stroke-rose-500'
+                  : isLast10Minutes
+                  ? 'stroke-amber-400'
+                  : 'stroke-[#10e599]'
+              }`}
+              strokeWidth="11"
+              strokeLinecap="round"
+              fill="transparent"
+              strokeDasharray={2 * Math.PI * 84}
+              strokeDashoffset={2 * Math.PI * 84 * (1 - progressPercent / 100)}
+              style={{
+                filter: isLastMinute
+                  ? 'drop-shadow(0 0 12px rgba(244, 63, 94, 0.8))'
+                  : isLast10Minutes
+                  ? 'drop-shadow(0 0 12px rgba(251, 191, 36, 0.8))'
+                  : 'drop-shadow(0 0 12px rgba(16, 229, 153, 0.8))',
+              }}
+            />
+          </svg>
+
+          {/* Center Digital Display */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-1">
+            <span className="text-[10px] font-gamer font-bold tracking-widest text-slate-400 uppercase">
+              TEMPO RESTANTE
+            </span>
+            <div
+              className={`font-gamer font-black text-5xl md:text-6xl tracking-tight font-mono transition-colors drop-shadow-lg ${
+                isLastMinute
+                  ? 'text-rose-400 animate-pulse'
+                  : isLast10Minutes
+                  ? 'text-amber-400'
+                  : 'text-white'
+              }`}
+            >
+              {formattedTime}
+            </div>
+            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
               isLastMinute
-                ? 'text-rose-400 animate-pulse'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-bounce'
                 : isLast10Minutes
-                ? 'text-amber-400'
-                : 'text-emerald-400'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'bg-[#10e599]/20 text-[#10e599] border border-[#10e599]/30'
+            }`}>
+              {isLastMinute ? '⚠️ Salve o jogo agora!' : isLast10Minutes ? '⏰ 10 minutos finais' : '🎮 Modo Seguro Ativo'}
+            </span>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="space-y-3 max-w-xs mx-auto pt-2">
+          <button
+            onClick={() => setIsPaused(!isPaused)}
+            className={`w-full py-3.5 px-4 rounded-2xl font-gamer font-bold text-sm flex items-center justify-center gap-2 border transition-all active:scale-95 ${
+              isPaused
+                ? 'bg-[#10e599] text-[#081a14] border-emerald-300 shadow-glow-mint'
+                : 'bg-[#131522] hover:bg-[#181b2c] text-slate-200 border-[#23273e]'
             }`}
           >
-            {formattedTime}
-          </div>
-          <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mt-2">
-            Horas : Minutos : Segundos
-          </p>
-        </div>
+            {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4" />}
+            <span>{isPaused ? '▶️ RETOMAR TEMPO' : '⏸️ PAUSAR TEMPO'}</span>
+          </button>
 
-        {/* Helpful Tips for Gael */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 max-w-xs mx-auto text-center space-y-1">
-          <p className="text-xs font-semibold text-slate-200">
-            {isLastMinute
-              ? '🚨 Salve seu jogo agora para não perder o progresso!'
-              : isLast10Minutes
-              ? '⏰ Chegando perto do fim da fase ou da partida!'
-              : '🎮 Aproveite seu momento de diversão!'}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            O alarme sonoro tocará automaticamente quando o tempo terminar.
-          </p>
+          {/* Friendly Tip Box (Stitch Advice Card) */}
+          <div className="p-3.5 rounded-2xl bg-[#131522]/90 border border-[#23273e] text-left flex items-start gap-3 shadow-md">
+            <span className="text-xl">💡</span>
+            <div>
+              <h5 className="font-gamer font-bold text-xs text-amber-300">
+                Aviso Amigável para o Gael:
+              </h5>
+              <p className="text-[11px] text-slate-300 leading-relaxed mt-0.5">
+                Te avisaremos com um som quando faltarem 5 minutos para você encontrar um ponto seguro e salvar sua partida!
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Bottom info */}
-      <div className="max-w-md mx-auto w-full text-center">
-        <p className="text-[11px] text-slate-500 font-medium">
-          GameTime Rewards • Modo Tela Bloqueada com Alarme
-        </p>
+      <div className="max-w-md mx-auto w-full text-center pb-1">
+        <button
+          onClick={onRequestEarlyExit}
+          className="text-xs text-slate-500 hover:text-slate-400 flex items-center justify-center gap-1 mx-auto"
+        >
+          <Lock className="w-3 h-3 text-amber-400" />
+          <span>Ajustes Parentais (Controle de Tempo)</span>
+        </button>
       </div>
     </div>
   )

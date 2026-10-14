@@ -42,60 +42,91 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-between p-6 bg-gradient-to-b from-rose-950 via-slate-950 to-slate-950 text-white select-none animate-fade-in overflow-y-auto">
-      {/* Top Header */}
-      <div className="max-w-md mx-auto w-full flex items-center justify-between pt-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-900/60 border border-rose-500/50 text-rose-300 text-xs font-bold uppercase tracking-wider">
-          <BatteryWarning className="w-4 h-4 animate-pulse" />
-          <span>Bateria Esgotada</span>
+    <div className="fixed inset-0 z-50 flex flex-col justify-between p-5 bg-gradient-to-b from-[#131522] via-[#0c0d14] to-[#0c0d14] text-white select-none animate-fade-in overflow-y-auto">
+      {/* Top Header (Stitch Screen 2) */}
+      <div className="max-w-md mx-auto w-full flex items-center justify-between pt-1">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-gamer font-bold uppercase tracking-wider">
+          <BatteryWarning className="w-3.5 h-3.5 text-rose-400" />
+          <span>GAME OVER • TEMPO ESGOTADO</span>
         </div>
 
         {/* Parent Unlock Action */}
         <button
           onClick={() => setShowPinModal(true)}
-          className="py-1.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors"
+          className="py-1.5 px-3 rounded-xl bg-[#131522] hover:bg-[#181b2c] text-slate-300 text-xs font-bold border border-[#23273e] flex items-center gap-1.5 transition-colors"
           title="Desbloquear com senha dos pais"
         >
           <Lock className="w-3.5 h-3.5 text-amber-400" />
-          <span>Desbloqueio Pais</span>
+          <span>Zona dos Pais 🔒</span>
         </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="max-w-md mx-auto w-full text-center space-y-6 my-auto py-8">
-        {/* Animated Skull/Gamer Icon */}
-        <div className="relative mx-auto w-24 h-24 rounded-3xl bg-rose-600/20 border-2 border-rose-500 flex items-center justify-center animate-bounce shadow-glow-rose">
-          <Skull className="w-14 h-14 text-rose-400" />
-          <div className="absolute inset-0 rounded-3xl bg-rose-500/20 animate-ping pointer-events-none" />
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="font-gamer font-bold text-3xl xs:text-4xl md:text-5xl text-white tracking-wider drop-shadow-lg">
-            🚫 GAME OVER, GAEL!
+      {/* Main Content Area: Misión Cumplida */}
+      <div className="max-w-md mx-auto w-full text-center space-y-4 my-auto py-4">
+        {/* Title */}
+        <div className="space-y-1">
+          <h1 className="font-gamer font-black text-3xl xs:text-4xl text-white tracking-wide drop-shadow-lg">
+            ¡MISIÓN CUMPLIDA!
           </h1>
-          <p className="text-sm md:text-base text-rose-200/90 font-medium max-w-sm mx-auto leading-relaxed">
-            Seu tempo de videogame acabou por hoje! Desligue o console e venha recarregar suas energias na vida real!
+          <p className="text-sm text-[#10e599] font-gamer font-bold flex items-center justify-center gap-1.5">
+            <span>¡Gran aventura hoy, Gael! 🚀</span>
           </p>
         </div>
 
-        {/* Action Cards */}
-        <div className="space-y-3 pt-4 max-w-sm mx-auto">
+        {/* Recharge Card (Stitch Moon Container) */}
+        <div className="gamer-card rounded-3xl p-5 border border-[#23273e] max-w-sm mx-auto space-y-3 shadow-xl">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-900 to-purple-900 mx-auto flex items-center justify-center text-3xl border border-indigo-400/40 shadow-glow-purple">
+            🌙
+          </div>
+          <div className="space-y-1">
+            <span className="text-[11px] font-gamer font-bold text-amber-300 uppercase tracking-wider block">
+              BATERIA EM MODO RECARGA
+            </span>
+            <p className="text-xs text-slate-300 leading-relaxed font-medium">
+              Seus olhos e seu supercérebro precisam descansar para subir de nível amanhã!
+            </p>
+          </div>
+        </div>
+
+        {/* Daily Stats Summary (Stitch 3 Columns) */}
+        <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
+          <div className="p-3 rounded-2xl bg-[#131522] border border-[#23273e]">
+            <span className="text-lg block font-mono">⏱️</span>
+            <span className="font-gamer font-bold text-base text-white block">45m</span>
+            <span className="text-[9px] text-slate-400 uppercase font-medium">Jogados</span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#131522] border border-[#23273e]">
+            <span className="text-lg block font-mono">🎯</span>
+            <span className="font-gamer font-bold text-base text-[#10e599] block">100%</span>
+            <span className="text-[9px] text-slate-400 uppercase font-medium">Missões</span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#131522] border border-[#23273e]">
+            <span className="text-lg block font-mono">⭐</span>
+            <span className="font-gamer font-bold text-base text-amber-300 block">+45m</span>
+            <span className="text-[9px] text-slate-400 uppercase font-medium">Ganhos</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-2.5 pt-2 max-w-sm mx-auto">
           {/* Mission Board Redirect */}
           <button
             onClick={handleMissionsClick}
-            className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-gamer-purple to-indigo-600 hover:from-purple-600 hover:to-indigo-500 text-white font-gamer font-bold text-sm shadow-glow-purple flex items-center justify-center gap-2.5 active:scale-95 transition-all border border-purple-400/40"
+            className="w-full py-3.5 px-5 rounded-2xl bg-[#131522] hover:bg-[#181b2c] text-white font-gamer font-bold text-xs tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all border border-[#23273e] hover:border-purple-500/50"
           >
-            <Sparkles className="w-5 h-5 text-amber-300" />
-            <span>VER MISSÕES PARA RECARREGAR TEMPO 🚀</span>
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span>VER MISSÕES DE AMANHÃ 🚀</span>
           </button>
 
           {/* Parents PIN unlock button */}
           <button
             onClick={() => setShowPinModal(true)}
-            className="w-full py-3 px-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3 px-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-slate-400 text-xs font-bold border border-slate-800 flex items-center justify-center gap-2 transition-colors"
           >
             <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span>Papai / Mamãe: Liberar mais tempo com PIN</span>
+            <span>Zona do Papai e Mamãe 🔒</span>
           </button>
         </div>
       </div>

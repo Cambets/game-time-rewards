@@ -8,12 +8,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0a0f1d',
+        background: '#0c0d14',
         surface: {
-          DEFAULT: '#0f172a',
-          card: '#131d36',
-          muted: '#1e293b',
-          border: '#334155',
+          DEFAULT: '#10121d',
+          card: '#131522',
+          muted: '#181b2c',
+          border: '#23273e',
+        },
+        stitch: {
+          dark: '#0c0d14',
+          card: '#131522',
+          cardLight: '#181b2c',
+          border: '#23273e',
+          mint: {
+            DEFAULT: '#10e599',
+            glow: '#00df8f',
+            dark: '#064e3b',
+          },
+          purple: {
+            DEFAULT: '#8b5cf6',
+            glow: '#a855f7',
+            light: '#c084fc',
+            dark: '#4c1d95',
+          },
+          gold: {
+            DEFAULT: '#ffb800',
+            glow: '#ffa000',
+            dark: '#78350f',
+          },
+          rose: {
+            DEFAULT: '#f43f5e',
+            glow: '#fb7185',
+            dark: '#881337',
+          }
         },
         gamer: {
           purple: {
@@ -23,8 +50,8 @@ export default {
             dark: '#581c87',
           },
           green: {
-            DEFAULT: '#10b981',
-            glow: '#34d399',
+            DEFAULT: '#10e599',
+            glow: '#00df8f',
             light: '#6ee7b7',
             dark: '#064e3b',
           },
@@ -38,16 +65,18 @@ export default {
             dark: '#881337',
           },
           amber: {
-            DEFAULT: '#f59e0b',
-            glow: '#fbbf24',
+            DEFAULT: '#ffb800',
+            glow: '#ffa000',
           }
         }
       },
       boxShadow: {
-        'glow-purple': '0 0 25px -3px rgba(139, 92, 246, 0.45)',
-        'glow-green': '0 0 25px -3px rgba(16, 185, 129, 0.45)',
-        'glow-rose': '0 0 25px -3px rgba(244, 63, 94, 0.45)',
-        'glow-cyan': '0 0 25px -3px rgba(6, 182, 212, 0.45)',
+        'glow-purple': '0 0 25px -2px rgba(139, 92, 246, 0.45)',
+        'glow-green': '0 0 25px -2px rgba(16, 229, 153, 0.45)',
+        'glow-mint': '0 0 25px -2px rgba(16, 229, 153, 0.5)',
+        'glow-gold': '0 0 25px -2px rgba(255, 184, 0, 0.45)',
+        'glow-rose': '0 0 25px -2px rgba(244, 63, 94, 0.45)',
+        'glow-cyan': '0 0 25px -2px rgba(6, 182, 212, 0.45)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
