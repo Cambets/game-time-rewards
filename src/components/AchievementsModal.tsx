@@ -107,8 +107,8 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl p-5 shadow-2xl space-y-4 animate-scale-up max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-md bg-surface border border-surface-border rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] my-auto relative flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-surface-border">
           <div className="flex items-center gap-2">

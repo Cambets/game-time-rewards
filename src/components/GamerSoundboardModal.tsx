@@ -69,8 +69,8 @@ export const GamerSoundboardModal: React.FC<GamerSoundboardModalProps> = ({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl p-5 shadow-2xl space-y-4 animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl p-5 shadow-2xl space-y-4 my-auto relative">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

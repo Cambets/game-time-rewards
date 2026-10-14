@@ -138,8 +138,8 @@ export const LearningModal: React.FC<LearningModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fade-in select-none">
-      <div className="w-full max-w-sm bg-surface border-2 border-gamer-purple/60 rounded-3xl p-5 shadow-2xl space-y-4 animate-scale-up relative overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md overflow-y-auto select-none">
+      <div className="w-full max-w-sm bg-surface border-2 border-gamer-purple/60 rounded-3xl p-5 shadow-2xl space-y-4 my-auto relative overflow-hidden flex flex-col max-h-[92vh]">
         {/* Ambient Glow */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />

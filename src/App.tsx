@@ -542,6 +542,18 @@ export function App() {
         onSelectKidMode={handleSwitchToKidMode}
         onRequestParentMode={handleRequestParentMode}
         pendingCount={pendingTasks.length}
+        avatarImage={activeProfile?.avatar_id === 'astronaut' || !activeProfile?.avatar_id ? '/images/gael-astronaut-avatar.png' : undefined}
+        avatarEmoji={
+          activeProfile?.avatar_id === 'warrior'
+            ? '⚔️'
+            : activeProfile?.avatar_id === 'robot'
+            ? '🤖'
+            : activeProfile?.avatar_id === 'mage'
+            ? '🧙'
+            : activeProfile?.avatar_id === 'racer'
+            ? '🏎️'
+            : undefined
+        }
       />
 
       {/* Parent Header (visible only in Parent Mode) */}

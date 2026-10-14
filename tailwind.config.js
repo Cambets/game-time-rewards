@@ -90,8 +90,8 @@ export default {
           '50%': { transform: 'translateY(2px)' },
         },
         fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
         scaleUp: {
           '0%': { transform: 'scale(0.96)', opacity: '0' },

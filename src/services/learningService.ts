@@ -262,8 +262,23 @@ export const INITIAL_LEARNING_CHALLENGES: LearningChallenge[] = [
   },
 ]
 
-// Gera uma sessão de 5 desafios variados aleatórios
+// Algoritmo Fisher-Yates para embaralhar itens de forma justa
+const shuffle = <T>(array: T[]): T[] => {
+  const arr = [...array]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+// Gera uma sessão de 5 desafios variados com ordem das opções 100% aleatórias
 export const generateLessonRound = (count = 5): LearningChallenge[] => {
-  const shuffled = [...INITIAL_LEARNING_CHALLENGES].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
+  const shuffledChallenges = shuffle(INITIAL_LEARNING_CHALLENGES)
+  const selected = shuffledChallenges.slice(0, count)
+
+  return selected.map((challenge) => ({
+    ...challenge,
+    options: shuffle(challenge.options),
+  }))
 }

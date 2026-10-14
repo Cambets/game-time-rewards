@@ -7,6 +7,8 @@ interface ModeSwitchHeaderProps {
   onSelectKidMode: () => void
   onRequestParentMode: () => void
   pendingCount?: number
+  avatarImage?: string
+  avatarEmoji?: string
 }
 
 export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
@@ -14,6 +16,8 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
   onSelectKidMode,
   onRequestParentMode,
   pendingCount = 0,
+  avatarImage,
+  avatarEmoji,
 }) => {
   return (
     <div className="w-full bg-[#0c0d14]/90 border-b border-[#23273e] px-4 py-2 backdrop-blur-md sticky top-0 z-40">
@@ -22,11 +26,17 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
         <div className="flex items-center justify-between px-0.5">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <img
-                src="/images/gaels-quest-logo.png"
-                alt="Gael's Quest"
-                className="w-7 h-7 rounded-full border border-purple-400/60 shadow-glow-purple object-cover"
-              />
+              {avatarEmoji ? (
+                <div className="w-7 h-7 rounded-full border border-purple-400/60 shadow-glow-purple bg-[#131522] flex items-center justify-center text-sm">
+                  {avatarEmoji}
+                </div>
+              ) : (
+                <img
+                  src={avatarImage || '/images/gael-astronaut-avatar.png'}
+                  alt="Gael Avatar"
+                  className="w-7 h-7 rounded-full border border-purple-400/60 shadow-glow-purple object-cover"
+                />
+              )}
               <span className="w-2 h-2 rounded-full bg-[#10e599] absolute -bottom-0.5 -right-0.5 border border-slate-950 animate-pulse" />
             </div>
             <div>

@@ -146,12 +146,12 @@ const getTaskVisual = (title: string) => {
   }
 }
 
-const AVATARS: { id: KidAvatar; name: string; emoji: string; color: string }[] = [
+const AVATARS: { id: KidAvatar; name: string; emoji: string; color: string; image?: string }[] = [
+  { id: 'astronaut', name: 'Comandante Cosmo', emoji: '🧑‍🚀', color: 'from-purple-500 to-indigo-600', image: '/images/gael-astronaut-avatar.png' },
   { id: 'warrior', name: 'Guerreiro Gamer', emoji: '⚔️', color: 'from-amber-500 to-orange-600' },
   { id: 'robot', name: 'Robô Cyber', emoji: '🤖', color: 'from-cyan-500 to-blue-600' },
   { id: 'mage', name: 'Mago Pixel', emoji: '🧙', color: 'from-purple-500 to-pink-600' },
   { id: 'racer', name: 'Piloto Speed', emoji: '🏎️', color: 'from-emerald-500 to-teal-600' },
-  { id: 'astronaut', name: 'Cosmo Gamer', emoji: '🚀', color: 'from-indigo-500 to-purple-700' },
 ]
 
 export const GaelDashboard: React.FC<GaelDashboardProps> = ({
@@ -176,7 +176,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   const spinsAvailable = profile.roulette_spins || 0
 
   const balance = profile.current_balance_minutes
-  const currentAvatarId = (profile.avatar_id as KidAvatar) || 'warrior'
+  const currentAvatarId = (profile.avatar_id as KidAvatar) || 'astronaut'
   const currentAvatar = AVATARS.find((a) => a.id === currentAvatarId) || AVATARS[0]
 
   // XP & Level calculations (starts at 0)
@@ -216,7 +216,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-4 pb-24 animate-fade-in relative">
+    <div className="space-y-4 pb-24 relative">
       {/* 1. Header do Jogador: Base Espacial Alfa (Stitch Neo-Arcade) */}
       <div className="gamer-card rounded-3xl p-5 border border-[#23273e] shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
@@ -261,11 +261,17 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
             title="Trocar Avatar do Gael"
           >
             <div className="w-14 h-14 rounded-2xl bg-[#131522] flex items-center justify-center overflow-hidden border border-purple-400/50">
-              <img
-                src="/images/gaels-quest-logo.png"
-                alt="Gael Avatar"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-              />
+              {currentAvatar.image ? (
+                <img
+                  src={currentAvatar.image}
+                  alt={currentAvatar.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                />
+              ) : (
+                <span className="text-3xl group-hover:scale-110 transition-transform select-none">
+                  {currentAvatar.emoji}
+                </span>
+              )}
             </div>
             <span className="absolute -bottom-1 -right-1 text-[9px] bg-slate-950 px-1.5 py-0.5 rounded-md text-[#10e599] font-bold border border-slate-700">
               Mudar
@@ -596,12 +602,20 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
 
       {/* Avatar Picker Modal */}
       {showAvatarPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl p-5 shadow-2xl space-y-4 animate-scale-up">
-            <h3 className="font-gamer font-bold text-lg text-white text-center">
-              ESCOLHA SEU AVATAR, GAEL!
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-sm bg-[#131522] border border-[#23273e] rounded-3xl p-5 shadow-2xl space-y-4 my-auto relative">
+            <div className="flex items-center justify-between pb-1 border-b border-[#23273e]">
+              <h3 className="font-gamer font-bold text-base text-white">
+                ESCOLHA SEU AVATAR, GAEL!
+              </h3>
+              <button
+                onClick={() => setShowAvatarPicker(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-2.5">
               {AVATARS.map((av) => (
                 <button
                   key={av.id}
@@ -610,23 +624,33 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
                     sounds.playReward()
                     setShowAvatarPicker(false)
                   }}
-                  className={`p-3 rounded-2xl flex items-center gap-3 border transition-all ${
+                  className={`p-3 rounded-2xl flex items-center gap-3 border transition-all text-left ${
                     currentAvatarId === av.id
-                      ? 'bg-gamer-purple/20 border-gamer-purple text-white shadow-glow-purple'
-                      : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                      ? 'bg-purple-950/60 border-purple-500 text-white shadow-glow-purple'
+                      : 'bg-[#181b2c] border-[#282d47] text-slate-300 hover:border-purple-500/50 hover:bg-[#1e2238]'
                   }`}
                 >
-                  <span className="text-3xl">{av.emoji}</span>
-                  <div className="text-left">
-                    <p className="font-bold text-sm text-white">{av.name}</p>
-                    <span className="text-[10px] text-slate-400">Gamer Nível {level}</span>
+                  {av.image ? (
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-purple-400/50 bg-[#131522] shrink-0">
+                      <img src={av.image} alt={av.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl border border-slate-700/60 bg-[#131522] flex items-center justify-center text-2xl shrink-0">
+                      {av.emoji}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white truncate">{av.name}</p>
+                    <span className="text-[11px] text-slate-400">
+                      {currentAvatarId === av.id ? '⭐ Avatar Escolhido' : 'Toque para escolher'}
+                    </span>
                   </div>
                 </button>
               ))}
             </div>
             <button
               onClick={() => setShowAvatarPicker(false)}
-              className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold"
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
             >
               Fechar
             </button>
@@ -636,8 +660,8 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
 
       {/* Modal de Escolher Tempo da Sessão */}
       {showStartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-surface border border-surface-border rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-sm bg-[#131522] border border-[#23273e] rounded-3xl p-6 shadow-2xl space-y-4 my-auto relative text-center">
             <div className="w-14 h-14 rounded-2xl bg-emerald-950 border border-emerald-500/50 text-emerald-400 mx-auto flex items-center justify-center">
               <Gamepad2 className="w-8 h-8" />
             </div>
@@ -666,8 +690,8 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
                       isSelected
                         ? 'bg-gamer-green text-slate-950 border-emerald-400 shadow-glow-green font-extrabold'
                         : isPossible
-                        ? 'bg-slate-900 text-slate-200 border-slate-800 hover:border-slate-700'
-                        : 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed'
+                        ? 'bg-[#181b2c] text-slate-200 border-[#282d47] hover:border-slate-600'
+                        : 'bg-[#141624]/60 text-slate-600 border-[#1f233a] cursor-not-allowed'
                     }`}
                   >
                     {idx === 3 ? `Tudo (${m}m)` : `${m} Minutos`}
