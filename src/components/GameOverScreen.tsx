@@ -66,10 +66,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         {/* Title */}
         <div className="space-y-1">
           <h1 className="font-gamer font-black text-3xl xs:text-4xl text-white tracking-wide drop-shadow-lg">
-            ¡MISIÓN CUMPLIDA!
+            MISSÃO CUMPRIDA! 🏆
           </h1>
           <p className="text-sm text-[#10e599] font-gamer font-bold flex items-center justify-center gap-1.5">
-            <span>¡Gran aventura hoy, Gael! 🚀</span>
+            <span>Grande aventura hoje, Gael! 🚀</span>
           </p>
         </div>
 

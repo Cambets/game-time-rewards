@@ -240,7 +240,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         <div className="flex items-center justify-between gap-3 pt-1">
           <div>
             <h2 className="font-gamer font-black text-2xl xs:text-3xl text-white tracking-wide leading-tight">
-              ¡HOLA, COMANDANTE GAEL! 🚀
+              OLÁ, COMANDANTE GAEL! 🚀
             </h2>
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               <span className="px-2 py-0.5 rounded-lg bg-orange-950/80 text-orange-300 text-[10px] font-bold border border-orange-500/40 flex items-center gap-1">
@@ -394,7 +394,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           </div>
         </div>
 
-        {/* 3. BOTÃO CENTRAL GIGANTE: ▶ ¡A JUGAR AHORA! */}
+        {/* 3. BOTÃO CENTRAL GIGANTE: ▶ JOGAR AGORA! */}
         <div className="pt-4">
           <button
             onClick={() => {
@@ -409,7 +409,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
             }`}
           >
             <Play className="w-5 h-5 fill-current" />
-            <span>{balance > 0 ? '▶ ¡A JUGAR AHORA!' : '⚡ FAÇA MISSÕES PARA RECARREGAR'}</span>
+            <span>{balance > 0 ? '▶️ JOGAR AGORA!' : '⚡ FAÇA MISSÕES PARA RECARREGAR'}</span>
           </button>
         </div>
       </div>
@@ -487,7 +487,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono font-bold text-[10px] tracking-wider uppercase">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span>MISIÓN ESPECIAL</span>
+            <span>MISSÃO ESPECIAL</span>
           </div>
           <span className="text-xs font-mono font-black text-[#10e599] bg-[#10e599]/20 px-2.5 py-0.5 rounded-full border border-[#10e599]/40">
             +10 MIN
@@ -503,7 +503,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
               Alfabeto Espacial
             </h3>
             <p className="text-xs text-slate-300 font-medium leading-snug">
-              Explora 5 letras galácticas e ganhe tempo de videogame!
+              Explore 5 letras galácticas e ganhe tempo de videogame!
             </p>
           </div>
         </div>
@@ -513,7 +513,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-gamer font-black text-sm tracking-wide shadow-glow-gold active:scale-95 transition-all flex items-center justify-center gap-2 border border-amber-200"
         >
           <Rocket className="w-4 h-4 fill-current" />
-          <span>🚀 JUGAR LECCIÓN (+10 MIN)</span>
+          <span>🚀 JOGAR LIÇÃO (+10 MIN)</span>
         </button>
       </div>
 
