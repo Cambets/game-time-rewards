@@ -1,11 +1,14 @@
 import React from 'react'
 import { ParentAuthor, Profile } from '../types'
-import { Gamepad2, Volume2, VolumeX, Database, Share2, Sparkles } from 'lucide-react'
+import { Gamepad2, Volume2, VolumeX, Database, Share2, Sparkles, UserPlus } from 'lucide-react'
 
 interface HeaderProps {
   currentAuthor: ParentAuthor
   onSelectAuthor: (author: ParentAuthor) => void
   activeProfile: Profile | null
+  profiles?: Profile[]
+  onSelectProfile?: (profile: Profile) => void
+  onOpenAddProfile?: () => void
   soundEnabled: boolean
   onToggleSound: () => void
   onOpenSettings: () => void
@@ -17,6 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   currentAuthor,
   onSelectAuthor,
   activeProfile,
+  profiles = [],
+  onSelectProfile,
+  onOpenAddProfile,
   soundEnabled,
   onToggleSound,
   onOpenSettings,
@@ -40,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </h1>
               </div>
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                Missões & Tempo de Jogo do Gael
+                Missões & Tempo de Jogo de {activeProfile?.name || 'Filho'}
               </p>
             </div>
           </div>
@@ -119,26 +125,72 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Dedicated Child Header: GAEL */}
-        {activeProfile && (
-          <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-gradient-to-r from-gamer-purple/15 to-slate-900 border border-gamer-purple/30 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-gamer-green shadow-glow-green" />
-              <span className="font-gamer font-bold text-sm text-white tracking-wide">
-                Gael
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                (Filho)
-              </span>
+        {/* Children Selector & Active Child Bar */}
+        <div className="space-y-1.5">
+          {profiles.length > 1 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {profiles.map((p) => {
+                const isSelected = activeProfile?.id === p.id
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectProfile && onSelectProfile(p)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 border ${
+                      isSelected
+                        ? 'bg-purple-950/80 text-purple-300 border-purple-500 shadow-glow-purple'
+                        : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <span>🚀</span>
+                    <span>{p.name}</span>
+                    <span className="text-[10px] font-mono text-emerald-400">({p.current_balance_minutes}m)</span>
+                  </button>
+                )
+              })}
+
+              {onOpenAddProfile && (
+                <button
+                  onClick={onOpenAddProfile}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold text-slate-400 hover:text-white border border-dashed border-slate-700 hover:border-slate-500 flex items-center gap-1 shrink-0 transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-[#10e599]" />
+                  <span>+ Filho(a)</span>
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-400">Saldo atual:</span>
-              <span className="font-gamer font-bold text-xs text-gamer-green bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-mono">
-                {activeProfile.current_balance_minutes} MIN
-              </span>
+          )}
+
+          {activeProfile && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-gradient-to-r from-gamer-purple/15 to-slate-900 border border-gamer-purple/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-gamer-green shadow-glow-green" />
+                <span className="font-gamer font-bold text-sm text-white tracking-wide">
+                  {activeProfile.name}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  ({activeProfile.age ? `${activeProfile.age} anos` : 'Filho'})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-400">Saldo:</span>
+                  <span className="font-gamer font-bold text-xs text-gamer-green bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-mono">
+                    {activeProfile.current_balance_minutes} MIN
+                  </span>
+                </div>
+                {profiles.length <= 1 && onOpenAddProfile && (
+                  <button
+                    onClick={onOpenAddProfile}
+                    className="p-1 rounded-lg text-slate-400 hover:text-[#10e599] hover:bg-slate-800 transition-colors"
+                    title="Adicionar outro filho(a)"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   )

@@ -11,6 +11,7 @@ interface ModeSwitchHeaderProps {
   avatarEmoji?: string
   onOpenProfileSelect?: () => void
   currentAuthor?: 'Papai' | 'Mamãe'
+  childName?: string
 }
 
 export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
@@ -22,6 +23,7 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
   avatarEmoji,
   onOpenProfileSelect,
   currentAuthor = 'Papai',
+  childName = 'Gael',
 }) => {
   return (
     <div className="w-full bg-[#0c0d14]/90 border-b border-[#23273e] px-4 py-2 backdrop-blur-md sticky top-0 z-40">
@@ -59,7 +61,7 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#10e599]" />
               <span>
-                {currentMode === 'kid' ? 'Gael 🚀' : currentAuthor === 'Papai' ? 'Papai 🧔' : 'Mamãe 👩'}
+                {currentMode === 'kid' ? `${childName} 🚀` : currentAuthor === 'Papai' ? 'Papai 🧔' : 'Mamãe 👩'}
               </span>
               <span className="text-[9px] text-[#10e599] group-hover:underline font-mono">Trocar 🔄</span>
             </button>
@@ -82,7 +84,7 @@ export const ModeSwitchHeader: React.FC<ModeSwitchHeaderProps> = ({
             }`}
           >
             <Gamepad2 className="w-4 h-4 text-[#10e599]" />
-            <span>Sou o Gael 🎮</span>
+            <span>Sou o {childName} 🎮</span>
           </button>
 
           <button

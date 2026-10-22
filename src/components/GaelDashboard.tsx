@@ -240,7 +240,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
         <div className="flex items-center justify-between gap-3 pt-1">
           <div>
             <h2 className="font-gamer font-black text-2xl xs:text-3xl text-white tracking-wide leading-tight">
-              OLÁ, COMANDANTE GAEL! 🚀
+              OLÁ, COMANDANTE {profile.name.toUpperCase()}! 🚀
             </h2>
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               <span className="px-2 py-0.5 rounded-lg bg-orange-950/80 text-orange-300 text-[10px] font-bold border border-orange-500/40 flex items-center gap-1">
@@ -258,7 +258,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           <button
             onClick={() => setShowAvatarPicker(true)}
             className="relative shrink-0 p-1 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-0.5 shadow-glow-purple group active:scale-95 transition-transform"
-            title="Trocar Avatar do Gael"
+            title={`Trocar Avatar de ${profile.name}`}
           >
             <div className="w-14 h-14 rounded-2xl bg-[#131522] flex items-center justify-center overflow-hidden border border-purple-400/50">
               {currentAvatar.image ? (
@@ -606,7 +606,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
           <div className="w-full max-w-sm bg-[#131522] border border-[#23273e] rounded-3xl p-5 shadow-2xl space-y-4 my-auto relative">
             <div className="flex items-center justify-between pb-1 border-b border-[#23273e]">
               <h3 className="font-gamer font-bold text-base text-white">
-                ESCOLHA SEU AVATAR, GAEL!
+                ESCOLHA SEU AVATAR, {profile.name.toUpperCase()}!
               </h3>
               <button
                 onClick={() => setShowAvatarPicker(false)}
@@ -668,7 +668,7 @@ export const GaelDashboard: React.FC<GaelDashboardProps> = ({
 
             <div>
               <h3 className="font-gamer font-bold text-lg text-white">
-                HORA DE JOGAR, GAEL!
+                HORA DE JOGAR, {profile.name.toUpperCase()}!
               </h3>
               <p className="text-xs text-slate-400 mt-1">
                 Quanto tempo você quer jogar nesta sessão?

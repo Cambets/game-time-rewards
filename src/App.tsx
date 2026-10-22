@@ -17,6 +17,7 @@ import { SupabaseModal } from './components/SupabaseModal'
 import { ShareModal } from './components/ShareModal'
 import { AlarmModal } from './components/AlarmModal'
 import { ProfileSelectScreen } from './components/ProfileSelectScreen'
+import { AddProfileModal } from './components/AddProfileModal'
 import { ToastContainer, ToastMessage } from './components/Toast'
 import { dataService } from './services/dataService'
 import { sounds } from './lib/sound'
@@ -93,6 +94,7 @@ export function App() {
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false)
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState<boolean>(false)
+  const [isAddProfileOpen, setIsAddProfileOpen] = useState<boolean>(false)
 
   // Active Game Session Timer
   const [activeSession, setActiveSession] = useState<ActiveGameSession | null>(null)
@@ -124,15 +126,16 @@ export function App() {
       ])
 
       setProfiles(profilesData)
-      const gaelProfile = profilesData.find((p) => p.name === 'Gael') || profilesData[0]
-      setActiveProfile(gaelProfile || null)
+      const savedChildId = typeof window !== 'undefined' ? localStorage.getItem('gametime_active_child_id') : null
+      const targetChild = profilesData.find((p) => p.id === savedChildId) || profilesData.find((p) => p.name === 'Gael') || profilesData[0]
+      setActiveProfile(targetChild || null)
       setTaskTemplates(templatesData)
 
-      if (gaelProfile) {
+      if (targetChild) {
         const [logsData, sessionData, pendingData] = await Promise.all([
-          dataService.getBalanceLogs(gaelProfile.id),
-          dataService.getActiveSession(gaelProfile.id),
-          dataService.getPendingTasks(gaelProfile.id),
+          dataService.getBalanceLogs(targetChild.id),
+          dataService.getActiveSession(targetChild.id),
+          dataService.getPendingTasks(targetChild.id),
         ])
         setLogs(logsData)
         setActiveSession(sessionData)
@@ -166,7 +169,7 @@ export function App() {
   const handleSwitchToKidMode = () => {
     setAppMode('kid')
     localStorage.setItem('gametime_app_mode', 'kid')
-    addToast('Bem-vindo ao seu QG, Gael! 🎮', undefined, 'info')
+    addToast(`Bem-vindo ao seu QG, ${activeProfile?.name || 'Gael'}! 🎮`, undefined, 'info')
   }
 
   const handleRequestParentMode = () => {
@@ -182,8 +185,43 @@ export function App() {
     addToast('Área dos Pais Desbloqueada 🔒', 'Acesso administrativo liberado.', 'success')
   }
 
+  // Handle switching active child
+  const handleSelectActiveChild = async (child: Profile) => {
+    setActiveProfile(child)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gametime_active_child_id', child.id)
+    }
+    try {
+      const [logsData, sessionData, pendingData] = await Promise.all([
+        dataService.getBalanceLogs(child.id),
+        dataService.getActiveSession(child.id),
+        dataService.getPendingTasks(child.id),
+      ])
+      setLogs(logsData)
+      setActiveSession(sessionData)
+      setPendingTasks(pendingData)
+    } catch (e) {
+      console.error('Error switching child data:', e)
+    }
+    addToast(`Perfil ativo: ${child.name} 🚀`, undefined, 'info')
+  }
+
+  // Handle adding a new child profile
+  const handleAddChildProfile = async (name: string, dailyMax: number, age: number) => {
+    try {
+      const newChild = await dataService.addProfile(name, dailyMax, age, 'astronaut')
+      setProfiles((prev) => [...prev, newChild])
+      await handleSelectActiveChild(newChild)
+      addToast(`🎉 Filho(a) ${name} adicionado(a) com sucesso!`, 'Perfil pronto para missões!', 'success')
+      if (soundEnabled) sounds.play1Up()
+    } catch (e) {
+      console.error('Error adding profile:', e)
+      addToast('Erro ao adicionar perfil', undefined, 'penalty')
+    }
+  }
+
   // Handle family profile selection (Gael vs Papai vs Mamãe)
-  const handleSelectRole = (role: AppUserRole, remember: boolean) => {
+  const handleSelectRole = async (role: AppUserRole, remember: boolean, selectedProfileId?: string) => {
     if (remember) {
       localStorage.setItem('gametime_saved_user', role)
     } else {
@@ -193,10 +231,18 @@ export function App() {
     setIsProfileSelectOpen(false)
 
     if (role === 'gael') {
+      let targetChild = activeProfile
+      if (selectedProfileId) {
+        const found = profiles.find((p) => p.id === selectedProfileId)
+        if (found) {
+          targetChild = found
+          await handleSelectActiveChild(found)
+        }
+      }
       setAppMode('kid')
       localStorage.setItem('gametime_app_mode', 'kid')
       sounds.play1Up()
-      addToast('Bem-vindo ao seu QG, Gael! 🚀', 'Mundo Gamer ativado!', 'success')
+      addToast(`Bem-vindo ao seu QG, ${targetChild?.name || 'Gael'}! 🚀`, 'Mundo Gamer ativado!', 'success')
     } else {
       setAppMode('parent')
       localStorage.setItem('gametime_app_mode', 'parent')
@@ -275,7 +321,7 @@ export function App() {
       setPendingTasks((prev) => prev.filter((p) => p.id !== task.id))
       addToast(
         `Missão "${task.task_title}" aprovada! (+${task.minutes_reward}m)`,
-        praise ? `${praise} — Por ${currentAuthor}` : `Creditado por ${currentAuthor} para o Gael!`,
+        praise ? `${praise} — Por ${currentAuthor}` : `Creditado por ${currentAuthor} para o ${activeProfile?.name || 'Gael'}!`,
         'success'
       )
       loadData()
@@ -327,7 +373,7 @@ export function App() {
       }
       addToast(
         `🏆 ${lessonTitle}! (+${minutes}m)`,
-        `Parabéns, Gael! +${minutes} minutos adicionados à bateria!`,
+        `Parabéns, ${activeProfile?.name || 'Gael'}! +${minutes} minutos adicionados à bateria!`,
         'success'
       )
       loadData()
@@ -336,7 +382,7 @@ export function App() {
     }
   }
 
-  // Parent grants roulette spins for Gael
+  // Parent grants roulette spins for child
   const handleGrantRouletteSpin = async (spinsCount: number = 1) => {
     if (!activeProfile) return
     try {
@@ -346,8 +392,8 @@ export function App() {
         triggerConfetti()
       }
       addToast(
-        `🎟️ ${spinsCount} Giro(s) de Roleta liberado(s) para o Gael!`,
-        `Autorizado por ${currentAuthor}. Gael agora pode girar a Roleta no QG dele!`,
+        `🎟️ ${spinsCount} Giro(s) de Roleta liberado(s) para o ${activeProfile?.name || 'Gael'}!`,
+        `Autorizado por ${currentAuthor}. ${activeProfile?.name || 'Gael'} agora pode girar a Roleta no QG!`,
         'success'
       )
       loadData()
@@ -362,7 +408,7 @@ export function App() {
     try {
       await dataService.lockRouletteSpins(activeProfile.id)
       if (soundEnabled) sounds.playPenalty()
-      addToast('Roleta travada 🔒', 'Gael não tem mais giros até que você libere.', 'info')
+      addToast('Roleta travada 🔒', `${activeProfile?.name || 'Gael'} não tem mais giros até que você libere.`, 'info')
       loadData()
     } catch (e) {
       console.error('Failed to lock roulette spins:', e)
@@ -421,7 +467,7 @@ export function App() {
 
       addToast(
         isReward ? `+${task.minutes_reward}m por "${task.title}"!` : `${task.minutes_reward}m penalidade aplicada`,
-        `Registrado por ${currentAuthor} para o Gael`,
+        `Registrado por ${currentAuthor} para o ${activeProfile?.name || 'Gael'}`,
         isReward ? 'success' : 'penalty'
       )
     } catch (err) {
@@ -453,7 +499,7 @@ export function App() {
       setIsAlarmModalOpen(false)
       setIsGameOver(false)
       sounds.stopAlarm()
-      addToast(`Cronômetro de ${minutes}m iniciado!`, 'Alarme tocará quando o tempo do Gael acabar.', 'info')
+      addToast(`Cronômetro de ${minutes}m iniciado!`, `Alarme tocará quando o tempo de ${activeProfile?.name || 'Gael'} acabar.`, 'info')
       loadData()
     } catch (e) {
       console.error('Failed to start session timer:', e)
@@ -469,7 +515,7 @@ export function App() {
       await dataService.stopActiveSession(activeProfile.id)
     }
     setActiveSession(null)
-    addToast('Sessão de jogo do Gael finalizada', undefined, 'info')
+    addToast(`Sessão de jogo de ${activeProfile?.name || 'Gael'} finalizada`, undefined, 'info')
     loadData()
   }
 
@@ -483,7 +529,7 @@ export function App() {
     await dataService.addToleranceToSession(activeProfile.id, addedMins)
     const updated = await dataService.getActiveSession(activeProfile.id)
     setActiveSession(updated)
-    addToast(`+${addedMins} min de tolerância adicionados`, 'Gael pode salvar a partida!', 'info')
+    addToast(`+${addedMins} min de tolerância adicionados`, `${activeProfile?.name || 'Gael'} pode salvar a partida!`, 'info')
   }
 
   // Time is expired in Session Screen -> Trigger Game Over screen!
@@ -533,10 +579,11 @@ export function App() {
     }
   }
 
-  // Reset Gael progress to clean start (0 min, 0 XP, 0 trophies)
+  // Reset child progress to clean start (0 min, 0 XP, 0 trophies)
   const handleResetGaelProgress = async () => {
     if (!activeProfile) return
-    if (!window.confirm('Deseja zerar a conta do Gael para começar do zero (0 minutos e 0 troféus)?')) {
+    const childName = activeProfile.name || 'Gael'
+    if (!window.confirm(`Deseja zerar a conta de ${childName} para começar do zero (0 minutos e 0 troféus)?`)) {
       return
     }
 
@@ -546,7 +593,7 @@ export function App() {
       setLogs([])
       setPendingTasks([])
       sounds.playReward()
-      addToast('Conta do Gael reiniciada!', 'Saldo, XP e troféus começam agora do zero!', 'info')
+      addToast(`Conta de ${childName} reiniciada!`, 'Saldo, XP e troféus começam agora do zero!', 'info')
       loadData()
     } catch (e) {
       console.error('Reset failed:', e)
@@ -590,7 +637,7 @@ export function App() {
       {/* Toast Notification Container */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Mode Switch Header (Sou o Gael 🎮 vs Área dos Pais 🔒) */}
+      {/* Mode Switch Header (Sou o Filho 🎮 vs Área dos Pais 🔒) */}
       <ModeSwitchHeader
         currentMode={appMode}
         onSelectKidMode={handleSwitchToKidMode}
@@ -598,6 +645,7 @@ export function App() {
         pendingCount={pendingTasks.length}
         onOpenProfileSelect={() => setIsProfileSelectOpen(true)}
         currentAuthor={currentAuthor}
+        childName={activeProfile?.name || 'Gael'}
         avatarImage={activeProfile?.avatar_id === 'astronaut' || !activeProfile?.avatar_id ? '/images/gael-astronaut-avatar.png' : undefined}
         avatarEmoji={
           activeProfile?.avatar_id === 'warrior'
@@ -618,6 +666,9 @@ export function App() {
           currentAuthor={currentAuthor}
           onSelectAuthor={handleSelectAuthor}
           activeProfile={activeProfile}
+          profiles={profiles}
+          onSelectProfile={handleSelectActiveChild}
+          onOpenAddProfile={() => setIsAddProfileOpen(true)}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
           onOpenSettings={() => setIsSupabaseModalOpen(true)}
@@ -631,7 +682,7 @@ export function App() {
         {loading && !activeProfile ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-3">
             <Gamepad2 className="w-10 h-10 text-gamer-purple animate-bounce" />
-            <p className="font-gamer text-sm tracking-wider">CARREGANDO GAMETIME DO GAEL...</p>
+            <p className="font-gamer text-sm tracking-wider">CARREGANDO GAMETIME REWARDS...</p>
           </div>
         ) : activeProfile ? (
           <>
@@ -717,7 +768,7 @@ export function App() {
                     onClick={handleResetGaelProgress}
                     className="text-[11px] text-slate-500 hover:text-rose-400 transition-colors font-medium underline py-1"
                   >
-                    🔄 Zerar saldo e XP do Gael (Começar do Zero)
+                    🔄 Zerar saldo e XP de {activeProfile.name || 'Filho'} (Começar do Zero)
                   </button>
                 </div>
               </>
@@ -805,14 +856,14 @@ export function App() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         logs={logs}
-        profileName="Gael"
+        profileName={activeProfile?.name || 'Gael'}
         onUndoLog={handleUndoLog}
       />
 
       <CustomMinutesModal
         isOpen={isCustomAdjustOpen}
         onClose={() => setIsCustomAdjustOpen(false)}
-        profileName="Gael"
+        profileName={activeProfile?.name || 'Gael'}
         onSubmitCustom={handleCustomAdjust}
         onCreateTemplate={handleCreateTemplate}
       />
@@ -831,18 +882,27 @@ export function App() {
 
       <AlarmModal
         isOpen={isAlarmModalOpen}
-        kidName="Gael"
+        kidName={activeProfile?.name || 'Gael'}
         onDismiss={handleStopSessionTimer}
         onAddTolerance={handleAddMinutesToSession}
       />
 
-      {/* Family Profile Select Screen (Gael vs Papai vs Mamãe) */}
+      {/* Family Profile Select Screen (Children vs Papai vs Mamãe) */}
       <ProfileSelectScreen
         isOpen={isProfileSelectOpen}
         onClose={() => setIsProfileSelectOpen(false)}
         canClose={Boolean(currentUserRole)}
         onSelectRole={handleSelectRole}
         currentRole={currentUserRole}
+        childrenProfiles={profiles}
+        onOpenAddChild={() => setIsAddProfileOpen(true)}
+      />
+
+      {/* Add Child Profile Modal */}
+      <AddProfileModal
+        isOpen={isAddProfileOpen}
+        onClose={() => setIsAddProfileOpen(false)}
+        onAdd={handleAddChildProfile}
       />
     </div>
   )

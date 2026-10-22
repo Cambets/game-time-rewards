@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AppUserRole } from '../types'
+import { AppUserRole, Profile } from '../types'
 import { dataService } from '../services/dataService'
 import { sounds } from '../lib/sound'
 import {
@@ -11,15 +11,18 @@ import {
   X,
   ShieldCheck,
   Delete,
-  Smartphone
+  Smartphone,
+  UserPlus
 } from 'lucide-react'
 
 interface ProfileSelectScreenProps {
   isOpen: boolean
   onClose?: () => void
   canClose?: boolean
-  onSelectRole: (role: AppUserRole, remember: boolean) => void
+  onSelectRole: (role: AppUserRole, remember: boolean, selectedProfileId?: string) => void
   currentRole?: AppUserRole | null
+  childrenProfiles?: Profile[]
+  onOpenAddChild?: () => void
 }
 
 export const ProfileSelectScreen: React.FC<ProfileSelectScreenProps> = ({
@@ -28,6 +31,8 @@ export const ProfileSelectScreen: React.FC<ProfileSelectScreenProps> = ({
   canClose = false,
   onSelectRole,
   currentRole,
+  childrenProfiles = [],
+  onOpenAddChild,
 }) => {
   const [rememberDevice, setRememberDevice] = useState<boolean>(true)
   const [selectedParent, setSelectedParent] = useState<'papai' | 'mamae' | null>(null)
@@ -36,10 +41,24 @@ export const ProfileSelectScreen: React.FC<ProfileSelectScreenProps> = ({
 
   if (!isOpen) return null
 
-  // Handle Gael Selection (no PIN required)
-  const handleSelectGael = () => {
+  const childrenList: Profile[] = childrenProfiles.length > 0
+    ? childrenProfiles
+    : [
+        {
+          id: '11111111-1111-1111-1111-111111111111',
+          name: 'Gael',
+          age: 5,
+          avatar_id: 'astronaut',
+          current_balance_minutes: 0,
+          daily_max_minutes: 90,
+          updated_at: new Date().toISOString()
+        }
+      ]
+
+  // Handle Child Selection (no PIN required)
+  const handleSelectChild = (childId: string) => {
     sounds.play1Up()
-    onSelectRole('gael', rememberDevice)
+    onSelectRole('gael', rememberDevice, childId)
   }
 
   // Handle Parent Selection (starts PIN flow)
@@ -135,47 +154,70 @@ export const ProfileSelectScreen: React.FC<ProfileSelectScreenProps> = ({
 
             {/* Profile Cards Grid */}
             <div className="space-y-3">
-              {/* Card 1: Gael */}
-              <button
-                onClick={handleSelectGael}
-                className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center justify-between group active:scale-[0.98] ${
-                  currentRole === 'gael'
-                    ? 'bg-gradient-to-r from-purple-950/80 to-[#181b2c] border-purple-500 shadow-glow-purple'
-                    : 'bg-[#181b2c] border-[#252a42] hover:border-purple-500/60 hover:bg-[#1e2238]'
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="relative shrink-0">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-purple-400/80 shadow-glow-purple bg-[#131522] group-hover:scale-105 transition-transform">
-                      <img
-                        src="/images/gael-astronaut-avatar.png"
-                        alt="Gael Astronauta"
-                        className="w-full h-full object-cover"
-                      />
+              {/* Children Cards */}
+              {childrenList.map((child) => (
+                <button
+                  key={child.id}
+                  onClick={() => handleSelectChild(child.id)}
+                  className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center justify-between group active:scale-[0.98] ${
+                    currentRole === 'gael'
+                      ? 'bg-gradient-to-r from-purple-950/80 to-[#181b2c] border-purple-500 shadow-glow-purple'
+                      : 'bg-[#181b2c] border-[#252a42] hover:border-purple-500/60 hover:bg-[#1e2238]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative shrink-0">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-purple-400/80 shadow-glow-purple bg-[#131522] group-hover:scale-105 transition-transform flex items-center justify-center">
+                        {child.avatar_id === 'warrior' ? (
+                          <span className="text-3xl">⚔️</span>
+                        ) : child.avatar_id === 'robot' ? (
+                          <span className="text-3xl">🤖</span>
+                        ) : child.avatar_id === 'mage' ? (
+                          <span className="text-3xl">🧙</span>
+                        ) : child.avatar_id === 'racer' ? (
+                          <span className="text-3xl">🏎️</span>
+                        ) : (
+                          <img
+                            src="/images/gael-astronaut-avatar.png"
+                            alt={child.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <span className="w-3 h-3 rounded-full bg-[#10e599] absolute -bottom-0.5 -right-0.5 border-2 border-[#131522] animate-pulse" />
                     </div>
-                    <span className="w-3 h-3 rounded-full bg-[#10e599] absolute -bottom-0.5 -right-0.5 border-2 border-[#131522] animate-pulse" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-gamer font-bold text-lg text-white group-hover:text-purple-300 transition-colors">
-                        GAEL 🚀
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-md bg-[#10e599]/15 text-[#10e599] text-[9px] font-bold font-mono border border-[#10e599]/30">
-                        5 ANOS
-                      </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-gamer font-bold text-lg text-white group-hover:text-purple-300 transition-colors">
+                          {child.name.toUpperCase()} 🚀
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-md bg-[#10e599]/15 text-[#10e599] text-[9px] font-bold font-mono border border-[#10e599]/30">
+                          {child.age ? `${child.age} ANOS` : 'GAMER'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium">
+                        QG Gamer, Missões e Modo Aprender
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium">
-                      QG Gamer, Missões e Modo Aprender
-                    </p>
                   </div>
-                </div>
 
-                <div className="shrink-0 pl-2">
-                  <span className="px-3 py-1.5 rounded-xl bg-purple-600 group-hover:bg-purple-500 text-white text-xs font-bold font-gamer tracking-wide shadow-md">
-                    ENTRAR 🎮
-                  </span>
-                </div>
-              </button>
+                  <div className="shrink-0 pl-2">
+                    <span className="px-3 py-1.5 rounded-xl bg-purple-600 group-hover:bg-purple-500 text-white text-xs font-bold font-gamer tracking-wide shadow-md">
+                      ENTRAR 🎮
+                    </span>
+                  </div>
+                </button>
+              ))}
+
+              {onOpenAddChild && (
+                <button
+                  onClick={onOpenAddChild}
+                  className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-950/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4 text-[#10e599]" />
+                  <span>Cadastrar Outro Filho(a) no App</span>
+                </button>
+              )}
 
               {/* Card 2: Papai */}
               <button

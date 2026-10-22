@@ -13,6 +13,7 @@ export type TaskCategory = 'rotina' | 'escola' | 'casa' | 'penalidade' | 'resgat
 export interface Profile {
   id: string
   name: string
+  age?: number
   current_balance_minutes: number
   daily_max_minutes: number
   avatar_id?: KidAvatar

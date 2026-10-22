@@ -13,9 +13,10 @@ const INITIAL_PROFILES: Profile[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     name: 'Gael',
+    age: 5,
     current_balance_minutes: 0,
     daily_max_minutes: 90,
-    avatar_id: 'warrior',
+    avatar_id: 'astronaut',
     xp: 0,
     roulette_spins: 0,
     updated_at: new Date().toISOString()
@@ -118,6 +119,51 @@ export const dataService = {
     }
 
     return getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+  },
+
+  async addProfile(name: string, dailyMaxMinutes = 90, age = 5, avatarId: KidAvatar = 'astronaut'): Promise<Profile> {
+    const newProfile: Profile = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `profile-${Date.now()}`,
+      name: name.trim(),
+      age,
+      current_balance_minutes: 0,
+      daily_max_minutes: dailyMaxMinutes,
+      avatar_id: avatarId,
+      xp: 0,
+      roulette_spins: 0,
+      updated_at: new Date().toISOString()
+    }
+
+    const supabase = getSupabaseClient()
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert({
+            id: newProfile.id,
+            name: newProfile.name,
+            current_balance_minutes: newProfile.current_balance_minutes,
+            daily_max_minutes: newProfile.daily_max_minutes,
+            avatar_id: newProfile.avatar_id,
+            xp: newProfile.xp,
+            roulette_spins: newProfile.roulette_spins,
+            updated_at: newProfile.updated_at
+          })
+          .select()
+          .single()
+
+        if (!error && data) {
+          return data as Profile
+        }
+      } catch (err) {
+        console.warn('Supabase addProfile failed, saving locally:', err)
+      }
+    }
+
+    const profiles = getLocalData<Profile[]>(LOCAL_STORAGE_KEY_PROFILES, INITIAL_PROFILES)
+    const updated = [...profiles, newProfile]
+    setLocalData(LOCAL_STORAGE_KEY_PROFILES, updated)
+    return newProfile
   },
 
   async updateProfileBalance(profileId: string, deltaMinutes: number): Promise<Profile> {

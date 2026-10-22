@@ -4,7 +4,7 @@ import { X, UserPlus, Sparkles } from 'lucide-react'
 interface AddProfileModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (name: string, dailyMax: number) => void
+  onAdd: (name: string, dailyMax: number, age: number) => void
 }
 
 export const AddProfileModal: React.FC<AddProfileModalProps> = ({
@@ -13,6 +13,7 @@ export const AddProfileModal: React.FC<AddProfileModalProps> = ({
   onAdd,
 }) => {
   const [name, setName] = useState('')
+  const [age, setAge] = useState<number>(5)
   const [dailyMax, setDailyMax] = useState<number | ''>(90)
 
   if (!isOpen) return null
@@ -21,8 +22,9 @@ export const AddProfileModal: React.FC<AddProfileModalProps> = ({
     e.preventDefault()
     if (!name.trim()) return
     const finalDailyMax = typeof dailyMax === 'number' && dailyMax > 0 ? dailyMax : 90
-    onAdd(name.trim(), finalDailyMax)
+    onAdd(name.trim(), finalDailyMax, age)
     setName('')
+    setAge(5)
     onClose()
   }
 
@@ -60,6 +62,28 @@ export const AddProfileModal: React.FC<AddProfileModalProps> = ({
               placeholder="Ex: Pedro, Laura..."
               className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gamer-purple"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-400 block mb-1.5">
+              Idade da Criança: <span className="text-[#10e599] font-bold">{age} anos</span>
+            </label>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setAge(a)}
+                  className={`w-9 h-9 rounded-xl text-xs font-bold shrink-0 border transition-all ${
+                    age === a
+                      ? 'bg-[#10e599] text-slate-950 border-[#10e599] shadow-glow-mint font-extrabold'
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
